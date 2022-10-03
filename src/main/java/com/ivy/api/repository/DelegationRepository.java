@@ -11,5 +11,7 @@ import com.ivy.api.repository.entity.DelegationEntity;
 public interface DelegationRepository extends JpaRepository<DelegationEntity, String> {
     DelegationEntity getByFromAddressAndToAddress(String fromAddress, String toAddress);
 
-    Page<DelegationEntity> getAllByToAddress(String toAddress, Pageable pageable);
+    Page<DelegationEntity> findAllByToAddress(String toAddress, Pageable pageable);
+
+    Page<DelegationEntity> findAllByFromAddress(String fromAddress, Pageable pageable);
 }
