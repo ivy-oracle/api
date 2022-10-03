@@ -20,10 +20,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "ftso_data_provider")
+@Table(name = "delegation_event")
 public class DelegationEventEntity {
     @Id
-    @Column(name = "ftso_data_provider_id")
+    @Column(name = "delegation_event_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long ID;
 
@@ -36,27 +36,27 @@ public class DelegationEventEntity {
     private String to;
 
     @NotNull
-    @Column(name = "prior_vote_power")
-    private String priorVotePower;
+    @Column(name = "prior_vote_power", columnDefinition = "numeric")
+    private BigInteger priorVotePower;
 
     @NotNull
-    @Column(name = "new_vote_power")
-    private String newVotePower;
+    @Column(name = "new_vote_power", columnDefinition = "numeric")
+    private BigInteger newVotePower;
 
     @NotNull
-    @Column(name = "block_number")
+    @Column(name = "block_number", columnDefinition = "numeric")
     private BigInteger blockNumber;
 
     @NotNull
-    @Column(name = "transaction_index")
-    private int transactionIndex;
+    @Column(name = "transaction_index", columnDefinition = "numeric")
+    private BigInteger transactionIndex;
 
     @NotNull
     @Column(name = "transaction_hash")
     private String transactionHash;
 
     @NotNull
-    @Column(name = "log_index")
-    private int logIndex;
+    @Column(name = "log_index", columnDefinition = "numeric")
+    private BigInteger logIndex;
 
 }
