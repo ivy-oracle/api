@@ -66,19 +66,12 @@ public class EventScheduler {
                                 startBlock.toString(0),
                                 endBlock.toString(0)));
 
+                String lastCompletionString = "";
                 for (BigInteger i = startBlock; i.compareTo(endBlock) < 0; i = i
                                 .add(fetchBlockSize.min(endBlock.subtract(i)))) {
                         BigInteger fromBlock = new BigInteger(String.valueOf(i));
                         BigInteger toBlock = new BigInteger(
                                         String.valueOf(i.add(fetchBlockSize.subtract(BigInteger.ONE))));
-
-                        Double completion = fromBlock.doubleValue() / endBlock.doubleValue() * 100;
-
-                        logger.info(String.format(
-                                        "fetching delegate event from block %s to %s (%s)",
-                                        fromBlock.toString(0),
-                                        toBlock.toString(0),
-                                        String.valueOf(Math.round(completion * 100.0) / 100.0) + "%"));
 
                         EthFilter filter = new EthFilter(
                                         DefaultBlockParameter.valueOf(fromBlock),
@@ -133,6 +126,19 @@ public class EventScheduler {
                                                         + event.getTransactionIndex().toString() + "-"
                                                         + event.getLogIndex()));
                         this.delegationEventRepository.saveAll(delegationEntities);
+
+                        Double completion = toBlock.doubleValue() / endBlock.doubleValue() * 100;
+                        String completionString = String.valueOf(Math.round(completion)) + "%";
+
+                        if (!lastCompletionString.equals(completionString)) {
+                                lastCompletionString = completionString;
+                                logger.info(String.format(
+                                                "fetch delegate event completion: %s (%s/%s)",
+                                                completionString,
+                                                toBlock.toString(),
+                                                endBlock.toString()));
+                        }
+
                 }
 
         }
