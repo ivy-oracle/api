@@ -14,7 +14,7 @@ import com.ivy.api.repository.entity.DelegationEventEntity;
 @Repository
 public interface DelegationEventRepository extends JpaRepository<DelegationEventEntity, Long> {
 
-    public DelegationEventEntity findByBlockNumberAndTransactionIndexAndLogIndex(
+    public DelegationEventEntity getByBlockNumberAndTransactionIndexAndLogIndex(
             @NotNull BigInteger blockNumber,
             @NotNull BigInteger transactionIndex,
             @NotNull BigInteger LogIndex);
