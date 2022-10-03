@@ -14,12 +14,12 @@ import com.ivy.api.repository.entity.DelegationEventEntity;
 @Repository
 public interface DelegationEventRepository extends JpaRepository<DelegationEventEntity, Long> {
 
-    public DelegationEventEntity getByBlockNumberAndTransactionIndexAndLogIndex(
+    public DelegationEventEntity findByBlockNumberAndTransactionIndexAndLogIndex(
             @NotNull BigInteger blockNumber,
             @NotNull BigInteger transactionIndex,
             @NotNull BigInteger LogIndex);
 
-    public List<DelegationEventEntity> getAllByBlockNumberIn(List<BigInteger> blockNumbers);
+    public List<DelegationEventEntity> findAllByBlockNumberIn(List<BigInteger> blockNumbers);
 
     @Query("select MAX(de.blockNumber) from DelegationEventEntity de")
     public BigInteger getLastBlockNumber();
