@@ -2,6 +2,9 @@ package com.ivy.api.cron;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +86,7 @@ public class EventScheduler {
 
             var logs = web3j.ethGetLogs(filter).send().getLogs();
 
+            var delegationEntities = new ArrayList<DelegationEventEntity>();
             for (int logIndex = 0; logIndex < logs.size(); logIndex++) {
                 Log log = (Log) logs.get(logIndex).get();
                 EventValues eventValues = Contract.staticExtractEventParameters(
@@ -96,16 +100,6 @@ public class EventScheduler {
 
                 logger.debug(typedResponse.from);
 
-                DelegationEventEntity fetchedEntity = delegationEventRepository
-                        .findByBlockNumberAndTransactionIndexAndLogIndex(
-                                typedResponse.log.getBlockNumber(),
-                                typedResponse.log.getTransactionIndex(),
-                                typedResponse.log.getLogIndex());
-
-                if (fetchedEntity != null) {
-                    continue;
-                }
-
                 var entity = new DelegationEventEntity();
                 entity.setFrom(typedResponse.from);
                 entity.setTo(typedResponse.to);
@@ -116,9 +110,23 @@ public class EventScheduler {
                 entity.setTransactionHash(typedResponse.log.getTransactionHash());
                 entity.setLogIndex(typedResponse.log.getLogIndex());
 
-                delegationEventRepository.save(entity);
+                delegationEntities.add(entity);
             }
-            this.delegationEventRepository.flush();
+
+            var blockNumbersSet = delegationEntities.stream().map(entity -> entity.getBlockNumber())
+                    .collect(Collectors.toSet());
+            var fetchedDelegationEvents = this.delegationEventRepository
+                    .getAllByBlockNumberIn(new ArrayList<BigInteger>(blockNumbersSet));
+
+            var fetchedDelegationEventsMap = new HashMap<String, DelegationEventEntity>();
+            fetchedDelegationEvents.forEach(event -> fetchedDelegationEventsMap.put(
+                    event.getBlockNumber().toString() + "-" + event.getTransactionIndex().toString() + "-"
+                            + event.getLogIndex(),
+                    event));
+            delegationEntities.removeIf(event -> fetchedDelegationEventsMap
+                    .containsKey(event.getBlockNumber().toString() + "-" + event.getTransactionIndex().toString() + "-"
+                            + event.getLogIndex()));
+            this.delegationEventRepository.saveAll(delegationEntities);
         }
 
     }

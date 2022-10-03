@@ -19,6 +19,8 @@ public interface DelegationEventRepository extends JpaRepository<DelegationEvent
             @NotNull BigInteger transactionIndex,
             @NotNull BigInteger LogIndex);
 
+    public List<DelegationEventEntity> getAllByBlockNumberIn(List<BigInteger> blockNumbers);
+
     @Query("select MAX(de.blockNumber) from DelegationEventEntity de")
     public BigInteger getLastBlockNumber();
 }
