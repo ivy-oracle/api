@@ -53,7 +53,7 @@ public class EventScheduler {
         BigInteger startBlock = BigInteger.valueOf(458);
         BigInteger lastFetchedBlockNumber = this.delegationEventRepository.getLastBlockNumber();
         if (lastFetchedBlockNumber != null) {
-            startBlock = startBlock.max(lastFetchedBlockNumber.subtract(fetchBlockSize));
+            startBlock = startBlock.max(lastFetchedBlockNumber.subtract(fetchBlockSize.multiply(BigInteger.TWO)));
         }
 
         Block block = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
