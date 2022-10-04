@@ -1,6 +1,7 @@
 package com.ivy.api.resolver;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.ivy.api.dto.FTSODataProviderDTO;
@@ -32,12 +33,25 @@ public class FTSODataProviderResolver implements Callable<FTSODataProviderDTO> {
                 .getDataProviderCurrentFeePercentage(address).send();
         ftsoDataProviderDTO.setFee(fee.floatValue() / 10000);
 
-        var lockedVotePower = this.contractService.getVpContract()
-                .votePowerOfAt(address, this.rewardEpochDTO.getVotePowerLockBlockNumber()).send();
-        ftsoDataProviderDTO.setLockedVotePower(CommonUtil.convertTokenToMiminalToken(lockedVotePower));
-        var currentVotePower = this.contractService.getVpContract()
-                .votePowerOfAt(address, latestBlockNumber).send();
-        ftsoDataProviderDTO.setCurrentVotePower(CommonUtil.convertTokenToMiminalToken(currentVotePower));
+        var lockedVotePower = CommonUtil.convertTokenToMiminalToken(this.contractService.getVpContract()
+                .votePowerOfAt(address, this.rewardEpochDTO.getVotePowerLockBlockNumber()).send());
+        ftsoDataProviderDTO.setLockedVotePower(lockedVotePower);
+        var currentVotePower = CommonUtil.convertTokenToMiminalToken(this.contractService.getVpContract()
+                .votePowerOfAt(address, latestBlockNumber).send());
+        ftsoDataProviderDTO.setCurrentVotePower(currentVotePower);
+
+        var providerRewards = CommonUtil.convertTokenToMiminalToken(this.contractService.getFtsoRewardManager()
+                .getStateOfRewardsFromDataProviders(address, this.rewardEpochDTO.getEpochId(), List.of(address)).send()
+                .component1().get(0));
+        ftsoDataProviderDTO.setProviderRewards(providerRewards);
+
+        var totalRewards = CommonUtil.convertTokenToMiminalToken(
+                this.contractService.getFtsoRewardManager().getUnclaimedReward(
+                        this.rewardEpochDTO.getEpochId(), address).send().component1());
+        ftsoDataProviderDTO.setTotalRewards(totalRewards);
+
+        var rewardRate = totalRewards / lockedVotePower;
+        ftsoDataProviderDTO.setRewardRate((float) rewardRate);
 
         return ftsoDataProviderDTO;
     }

@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import javax.validation.constraints.NotNull;
@@ -24,6 +23,12 @@ public class FTSODataProviderDTO {
 
     @NotNull
     Double currentVotePower;
+
+    @NotNull
+    Double totalRewards;
+
+    @NotNull
+    Double providerRewards;
 
     @NotNull
     float rewardRate;
