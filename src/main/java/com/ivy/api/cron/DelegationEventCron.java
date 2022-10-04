@@ -27,14 +27,14 @@ import com.ivy.api.repository.entity.DelegationEventEntity;
 import com.ivy.api.service.ContractService;
 
 @Component
-public class EventScheduler {
-        Logger logger = LoggerFactory.getLogger(EventScheduler.class);
+public class DelegationEventCron {
+        Logger logger = LoggerFactory.getLogger(DelegationEventCron.class);
 
         private final Web3j web3j;
         private final ContractService contractService;
         private final DelegationEventRepository delegationEventRepository;
 
-        public EventScheduler(
+        public DelegationEventCron(
                         Web3j web3j, ContractService contractService,
                         DelegationEventRepository delegationEventRepository) {
                 this.web3j = web3j;
