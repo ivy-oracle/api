@@ -21,6 +21,7 @@ import org.web3j.tuples.generated.Tuple2;
 import com.ivy.api.contract.VoterWhitelister;
 import com.ivy.api.dto.FTSODataProviderDTO;
 import com.ivy.api.dto.RewardEpochDTO;
+import com.ivy.api.repository.PriceRevealedEventRepository;
 import com.ivy.api.util.CommonUtil;
 
 @Service
@@ -30,11 +31,14 @@ public class FTSODataProviderService {
     private final ContractService contractService;
     private final FTSOService ftsoService;
     private final VoterWhitelister voterWhitelister;
+    private final PriceRevealedEventRepository priceRevealedEventRepository;
 
-    public FTSODataProviderService(ContractService contractService, FTSOService ftsoService) {
+    public FTSODataProviderService(ContractService contractService, FTSOService ftsoService,
+            PriceRevealedEventRepository priceRevealedEventRepository) {
         this.contractService = contractService;
         this.ftsoService = ftsoService;
         this.voterWhitelister = this.contractService.getVoterWhitelister();
+        this.priceRevealedEventRepository = priceRevealedEventRepository;
     }
 
     public List<FTSODataProviderDTO> getAllFTSODataProviders() {

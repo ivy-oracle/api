@@ -17,8 +17,8 @@ import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.tx.Contract;
 
 import com.ivy.api.contract.Ftso;
-import com.ivy.api.repository.PriceFinalizedEventEntityRepository;
-import com.ivy.api.repository.PriceRevealedEventEntityRepository;
+import com.ivy.api.repository.PriceFinalizedEventRepository;
+import com.ivy.api.repository.PriceRevealedEventRepository;
 import com.ivy.api.repository.entity.PriceFinalizedEventEntity;
 import com.ivy.api.repository.entity.PriceRevealedEventEntity;
 import com.ivy.api.service.ContractService;
@@ -29,14 +29,14 @@ public class FTSOPriceCron {
 
 	private final Web3j web3j;
 	private final ContractService contractService;
-	private final PriceFinalizedEventEntityRepository priceFinalizedEventEntityRepository;
-	private final PriceRevealedEventEntityRepository priceRevealedEventEntityRepository;
+	private final PriceFinalizedEventRepository priceFinalizedEventEntityRepository;
+	private final PriceRevealedEventRepository priceRevealedEventEntityRepository;
 
 	public FTSOPriceCron(
 			Web3j web3j,
 			ContractService contractService,
-			PriceFinalizedEventEntityRepository priceFinalizedEventEntityRepository,
-			PriceRevealedEventEntityRepository priceRevealedEventEntityRepository) {
+			PriceFinalizedEventRepository priceFinalizedEventEntityRepository,
+			PriceRevealedEventRepository priceRevealedEventEntityRepository) {
 		this.web3j = web3j;
 		this.contractService = contractService;
 		this.priceFinalizedEventEntityRepository = priceFinalizedEventEntityRepository;

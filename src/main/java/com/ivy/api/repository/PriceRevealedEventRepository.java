@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import com.ivy.api.repository.entity.PriceRevealedEventEntity;
 
 @Repository
-public interface PriceRevealedEventEntityRepository extends JpaRepository<PriceRevealedEventEntity, Long> {
+public interface PriceRevealedEventRepository extends JpaRepository<PriceRevealedEventEntity, Long> {
 
     public PriceRevealedEventEntity findByEpochIdAndSymbolAndVoter(BigInteger epochId, String symbol, String voter);
 

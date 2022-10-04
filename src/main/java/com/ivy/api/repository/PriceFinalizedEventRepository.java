@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.ivy.api.repository.entity.PriceFinalizedEventEntity;
 
 @Repository
-public interface PriceFinalizedEventEntityRepository extends JpaRepository<PriceFinalizedEventEntity, Long> {
+public interface PriceFinalizedEventRepository extends JpaRepository<PriceFinalizedEventEntity, Long> {
 
     public PriceFinalizedEventEntity findByEpochIdAndSymbol(BigInteger epochId, String symbol);
 
