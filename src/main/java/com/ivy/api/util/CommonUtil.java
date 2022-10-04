@@ -1,11 +1,12 @@
 package com.ivy.api.util;
 
 import java.math.BigInteger;
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class CommonUtil {
     public static Double convertTokenToMiminalToken(BigInteger token) {
-        return Double.valueOf(token.doubleValue() / Math.pow(10, 18));
+        return new BigDecimal(token.toString()).divide(new BigDecimal(Math.pow(10, 18))).doubleValue();
     }
 
     public static Date convertTimestampToDate(BigInteger timestamp) {
