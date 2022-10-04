@@ -17,8 +17,10 @@ import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.tx.Contract;
 
 import com.ivy.api.contract.Ftso;
-import com.ivy.api.contract.Ftso.PriceFinalizedEventResponse;
-import com.ivy.api.contract.Ftso.PriceRevealedEventResponse;
+import com.ivy.api.repository.PriceFinalizedEventEntityRepository;
+import com.ivy.api.repository.PriceRevealedEventEntityRepository;
+import com.ivy.api.repository.entity.PriceFinalizedEventEntity;
+import com.ivy.api.repository.entity.PriceRevealedEventEntity;
 import com.ivy.api.service.ContractService;
 
 @Component
@@ -27,15 +29,24 @@ public class FTSOPriceCron {
 
     private final Web3j web3j;
     private final ContractService contractService;
+    private final PriceFinalizedEventEntityRepository priceFinalizedEventEntityRepository;
+    private final PriceRevealedEventEntityRepository priceRevealedEventEntityRepository;
 
-    public FTSOPriceCron(Web3j web3j, ContractService contractService) {
+    public FTSOPriceCron(
+            Web3j web3j,
+            ContractService contractService,
+            PriceFinalizedEventEntityRepository priceFinalizedEventEntityRepository,
+            PriceRevealedEventEntityRepository priceRevealedEventEntityRepository) {
         this.web3j = web3j;
         this.contractService = contractService;
+        this.priceFinalizedEventEntityRepository = priceFinalizedEventEntityRepository;
+        this.priceRevealedEventEntityRepository = priceRevealedEventEntityRepository;
     }
 
     @Scheduled(fixedDelay = 180 * 1000)
     public void fetchPrices() throws IOException {
-        logger.info("fetching finalized price events");
+        int priceFinalizedFetchCount = 0;
+        int priceRevealedFetchedCount = 0;
 
         BigInteger latestBlockNumber = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
                 .send().getBlock().getNumber();
@@ -45,47 +56,69 @@ public class FTSOPriceCron {
             BigInteger fromBlock = latestBlockNumber.subtract(BigInteger.valueOf(250));
             BigInteger toBlock = latestBlockNumber.subtract(BigInteger.ONE);
 
-            EthFilter filter = new EthFilter(
+            EthFilter priceFinalizedFilter = new EthFilter(
                     DefaultBlockParameter.valueOf(fromBlock),
                     DefaultBlockParameter.valueOf(toBlock),
                     ftso.getContractAddress());
-            filter.addSingleTopic(EventEncoder.encode(Ftso.PRICEFINALIZED_EVENT));
-            filter.addSingleTopic(EventEncoder.encode(Ftso.PRICEREVEALED_EVENT));
+            priceFinalizedFilter.addSingleTopic(EventEncoder.encode(Ftso.PRICEFINALIZED_EVENT));
+            var priceFinalizedLogs = web3j.ethGetLogs(priceFinalizedFilter).send().getLogs();
 
-            var logs = web3j.ethGetLogs(filter).send().getLogs();
+            for (int logIndex = 0; logIndex < priceFinalizedLogs.size(); logIndex++) {
+                Log log = (Log) priceFinalizedLogs.get(logIndex).get();
+                EventValues eventValues = Contract.staticExtractEventParameters(
+                        Ftso.PRICEFINALIZED_EVENT, log);
+                PriceFinalizedEventEntity price = new PriceFinalizedEventEntity();
 
-            for (int logIndex = 0; logIndex < logs.size(); logIndex++) {
-                Log log = (Log) logs.get(logIndex).get();
-                var topics = log.getTopics();
+                price.setSymbol(symbol);
+                price.setEpochId((BigInteger) eventValues.getIndexedValues().get(0).getValue());
+                price.setPrice((BigInteger) eventValues.getNonIndexedValues().get(0).getValue());
+                price.setRewardedFtso((Boolean) eventValues.getNonIndexedValues().get(1).getValue());
+                price.setLowRewardPrice((BigInteger) eventValues.getNonIndexedValues().get(2).getValue());
+                price.setHighRewardPrice((BigInteger) eventValues.getNonIndexedValues().get(3).getValue());
+                price.setFinalizationType((BigInteger) eventValues.getNonIndexedValues().get(4).getValue());
+                price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(5).getValue());
 
-                if (topics.contains(EventEncoder.encode(Ftso.PRICEFINALIZED_EVENT))) {
-                    EventValues eventValues = Contract.staticExtractEventParameters(
-                            Ftso.PRICEFINALIZED_EVENT, log);
-                    PriceFinalizedEventResponse typedResponse = new PriceFinalizedEventResponse();
-
-                    typedResponse.epochId = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
-                    typedResponse.price = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
-                    typedResponse.rewardedFtso = (Boolean) eventValues.getNonIndexedValues().get(1).getValue();
-                    typedResponse.lowRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
-                    typedResponse.highRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(3).getValue();
-                    typedResponse.finalizationType = (BigInteger) eventValues.getNonIndexedValues().get(4).getValue();
-                    typedResponse.timestamp = (BigInteger) eventValues.getNonIndexedValues().get(5).getValue();
-
-                } else if (topics.contains(EventEncoder.encode(Ftso.PRICEREVEALED_EVENT))) {
-                    EventValues eventValues = Contract.staticExtractEventParameters(
-                            Ftso.PRICEREVEALED_EVENT, log);
-                    PriceRevealedEventResponse typedResponse = new PriceRevealedEventResponse();
-                    typedResponse.voter = (String) eventValues.getIndexedValues().get(0).getValue();
-                    typedResponse.epochId = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
-                    typedResponse.price = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
-                    typedResponse.random = (BigInteger) eventValues.getNonIndexedValues().get(1).getValue();
-                    typedResponse.timestamp = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
-                    typedResponse.votePowerNat = (BigInteger) eventValues.getNonIndexedValues().get(3).getValue();
-                    typedResponse.votePowerAsset = (BigInteger) eventValues.getNonIndexedValues().get(4).getValue();
+                var savedPrice = this.priceFinalizedEventEntityRepository.findByEpochIdAndSymbol(price.getEpochId(),
+                        symbol);
+                if (savedPrice == null) {
+                    this.priceFinalizedEventEntityRepository.save(price);
+                    priceFinalizedFetchCount++;
                 }
-
             }
 
+            EthFilter priceRevealedFilter = new EthFilter(
+                    DefaultBlockParameter.valueOf(fromBlock),
+                    DefaultBlockParameter.valueOf(toBlock),
+                    ftso.getContractAddress());
+            priceRevealedFilter.addSingleTopic(EventEncoder.encode(Ftso.PRICEREVEALED_EVENT));
+            var priceRevealedLogs = web3j.ethGetLogs(priceRevealedFilter).send().getLogs();
+
+            for (int logIndex = 0; logIndex < priceRevealedLogs.size(); logIndex++) {
+                Log log = (Log) priceRevealedLogs.get(logIndex).get();
+                EventValues eventValues = Contract.staticExtractEventParameters(
+                        Ftso.PRICEREVEALED_EVENT, log);
+                PriceRevealedEventEntity price = new PriceRevealedEventEntity();
+
+                price.setSymbol(symbol);
+                price.setVoter((String) eventValues.getIndexedValues().get(0).getValue());
+                price.setEpochId((BigInteger) eventValues.getIndexedValues().get(1).getValue());
+                price.setPrice((BigInteger) eventValues.getNonIndexedValues().get(0).getValue());
+                price.setRandom((BigInteger) eventValues.getNonIndexedValues().get(1).getValue());
+                price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(2).getValue());
+                price.setVotePowerNat((BigInteger) eventValues.getNonIndexedValues().get(3).getValue());
+                price.setVotePowerAsset((BigInteger) eventValues.getNonIndexedValues().get(4).getValue());
+
+                var savedPrice = this.priceRevealedEventEntityRepository
+                        .findByEpochIdAndSymbolAndVoter(price.getEpochId(), symbol, price.getVoter());
+                if (savedPrice == null) {
+                    this.priceRevealedEventEntityRepository.save(price);
+                    priceRevealedFetchedCount++;
+                }
+            }
         }
+        logger.info(String.format(
+                "fetched %d finalized and %d revealed prices",
+                priceFinalizedFetchCount,
+                priceRevealedFetchedCount));
     }
 }
