@@ -1,12 +1,18 @@
 package com.ivy.api.service;
 
+import java.io.IOException;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.EthBlock.Block;
 import org.web3j.tx.gas.DefaultGasProvider;
 
 import com.ivy.api.contract.Ftso;
@@ -105,5 +111,29 @@ public class ContractService {
 
 	public Ftso getFtso(String symbol) {
 		return this.ftsos.get(symbol);
+	}
+
+	public Block getLatestBlock() {
+		Block latestBlock;
+		try {
+			latestBlock = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
+					.send().getBlock();
+		} catch (IOException e) {
+			throw new ResponseStatusException(
+					HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get latest block", e);
+		}
+		return latestBlock;
+	}
+
+	public BigInteger getLatestBlockNumber() {
+		BigInteger latestBlockNumber;
+		try {
+			latestBlockNumber = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
+					.send().getBlock().getNumber();
+		} catch (IOException e) {
+			throw new ResponseStatusException(
+					HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get latest block number", e);
+		}
+		return latestBlockNumber;
 	}
 }
