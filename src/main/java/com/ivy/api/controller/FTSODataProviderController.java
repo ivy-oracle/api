@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,5 +25,11 @@ public class FTSODataProviderController {
     ResponseEntity<List<FTSODataProviderDTO>> getDataProviders() {
         var providers = this.ftsoDataProviderService.getAllFTSODataProviders();
         return ResponseEntity.ok(providers);
+    }
+
+    @GetMapping("/{address}")
+    ResponseEntity<FTSODataProviderDTO> getDataProvider(@PathVariable("address") String address) {
+        var provider = this.ftsoDataProviderService.getFTSODataProvider(address);
+        return ResponseEntity.ok(provider);
     }
 }
