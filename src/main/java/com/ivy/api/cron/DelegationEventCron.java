@@ -28,119 +28,119 @@ import com.ivy.api.service.ContractService;
 
 @Component
 public class DelegationEventCron {
-        Logger logger = LoggerFactory.getLogger(DelegationEventCron.class);
+	Logger logger = LoggerFactory.getLogger(DelegationEventCron.class);
 
-        private final Web3j web3j;
-        private final ContractService contractService;
-        private final DelegationEventRepository delegationEventRepository;
+	private final Web3j web3j;
+	private final ContractService contractService;
+	private final DelegationEventRepository delegationEventRepository;
 
-        public DelegationEventCron(
-                        Web3j web3j, ContractService contractService,
-                        DelegationEventRepository delegationEventRepository) {
-                this.web3j = web3j;
-                this.contractService = contractService;
-                this.delegationEventRepository = delegationEventRepository;
-        }
+	public DelegationEventCron(
+			Web3j web3j, ContractService contractService,
+			DelegationEventRepository delegationEventRepository) {
+		this.web3j = web3j;
+		this.contractService = contractService;
+		this.delegationEventRepository = delegationEventRepository;
+	}
 
-        @Scheduled(fixedDelay = 60 * 60 * 1000)
-        public void fetchDelegateEvents() throws IOException {
-                VPContract vpContract = this.contractService.getVpContract();
+	@Scheduled(fixedDelay = 60 * 60 * 1000)
+	public void fetchDelegateEvents() throws IOException {
+		VPContract vpContract = this.contractService.getVpContract();
 
-                BigInteger fetchBlockSize = BigInteger.valueOf(256);
+		BigInteger fetchBlockSize = BigInteger.valueOf(256);
 
-                // TODO: Set start block value by chain
-                // coston: 43369, songbird: 458, flare: 40
-                BigInteger startBlock = BigInteger.valueOf(458);
-                BigInteger lastFetchedBlockNumber = this.delegationEventRepository.getLastBlockNumber();
-                if (lastFetchedBlockNumber != null) {
-                        startBlock = startBlock
-                                        .max(lastFetchedBlockNumber.subtract(fetchBlockSize.multiply(BigInteger.TWO)));
-                }
+		// TODO: Set start block value by chain
+		// coston: 43369, songbird: 458, flare: 40
+		BigInteger startBlock = BigInteger.valueOf(458);
+		BigInteger lastFetchedBlockNumber = this.delegationEventRepository.getLastBlockNumber();
+		if (lastFetchedBlockNumber != null) {
+			startBlock = startBlock
+					.max(lastFetchedBlockNumber.subtract(fetchBlockSize.multiply(BigInteger.TWO)));
+		}
 
-                Block block = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
-                                .send().getBlock();
-                BigInteger endBlock = block.getNumber();
+		Block block = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
+				.send().getBlock();
+		BigInteger endBlock = block.getNumber();
 
-                logger.info(String.format(
-                                "fetching delegate event from block %s to block %s",
-                                startBlock.toString(0),
-                                endBlock.toString(0)));
+		logger.info(String.format(
+				"fetching delegate event from block %s to block %s",
+				startBlock.toString(0),
+				endBlock.toString(0)));
 
-                String lastCompletionString = "";
-                for (BigInteger i = startBlock; i.compareTo(endBlock) < 0; i = i
-                                .add(fetchBlockSize.min(endBlock.subtract(i)))) {
-                        BigInteger fromBlock = new BigInteger(String.valueOf(i));
-                        BigInteger toBlock = new BigInteger(
-                                        String.valueOf(i.add(fetchBlockSize.subtract(BigInteger.ONE))));
+		String lastCompletionString = "";
+		for (BigInteger i = startBlock; i.compareTo(endBlock) < 0; i = i
+				.add(fetchBlockSize.min(endBlock.subtract(i)))) {
+			BigInteger fromBlock = new BigInteger(String.valueOf(i));
+			BigInteger toBlock = new BigInteger(
+					String.valueOf(i.add(fetchBlockSize.subtract(BigInteger.ONE))));
 
-                        EthFilter filter = new EthFilter(
-                                        DefaultBlockParameter.valueOf(fromBlock),
-                                        DefaultBlockParameter.valueOf(toBlock),
-                                        vpContract.getContractAddress());
-                        filter.addSingleTopic(EventEncoder.encode(VPContract.DELEGATE_EVENT));
+			EthFilter filter = new EthFilter(
+					DefaultBlockParameter.valueOf(fromBlock),
+					DefaultBlockParameter.valueOf(toBlock),
+					vpContract.getContractAddress());
+			filter.addSingleTopic(EventEncoder.encode(VPContract.DELEGATE_EVENT));
 
-                        var logs = web3j.ethGetLogs(filter).send().getLogs();
+			var logs = web3j.ethGetLogs(filter).send().getLogs();
 
-                        var delegationEntities = new ArrayList<DelegationEventEntity>();
-                        for (int logIndex = 0; logIndex < logs.size(); logIndex++) {
-                                Log log = (Log) logs.get(logIndex).get();
-                                EventValues eventValues = Contract.staticExtractEventParameters(
-                                                VPContract.DELEGATE_EVENT, log);
-                                DelegateEventResponse typedResponse = new DelegateEventResponse();
-                                typedResponse.log = log;
-                                typedResponse.from = (String) eventValues.getIndexedValues().get(0).getValue();
-                                typedResponse.to = (String) eventValues.getIndexedValues().get(1).getValue();
-                                typedResponse.priorVotePower = (BigInteger) eventValues.getNonIndexedValues().get(0)
-                                                .getValue();
-                                typedResponse.newVotePower = (BigInteger) eventValues.getNonIndexedValues().get(1)
-                                                .getValue();
+			var delegationEntities = new ArrayList<DelegationEventEntity>();
+			for (int logIndex = 0; logIndex < logs.size(); logIndex++) {
+				Log log = (Log) logs.get(logIndex).get();
+				EventValues eventValues = Contract.staticExtractEventParameters(
+						VPContract.DELEGATE_EVENT, log);
+				DelegateEventResponse typedResponse = new DelegateEventResponse();
+				typedResponse.log = log;
+				typedResponse.from = (String) eventValues.getIndexedValues().get(0).getValue();
+				typedResponse.to = (String) eventValues.getIndexedValues().get(1).getValue();
+				typedResponse.priorVotePower = (BigInteger) eventValues.getNonIndexedValues().get(0)
+						.getValue();
+				typedResponse.newVotePower = (BigInteger) eventValues.getNonIndexedValues().get(1)
+						.getValue();
 
-                                logger.debug(typedResponse.from);
+				logger.debug(typedResponse.from);
 
-                                var entity = new DelegationEventEntity();
-                                entity.setFrom(typedResponse.from);
-                                entity.setTo(typedResponse.to);
-                                entity.setPriorVotePower(typedResponse.priorVotePower);
-                                entity.setNewVotePower(typedResponse.newVotePower);
-                                entity.setBlockNumber(typedResponse.log.getBlockNumber());
-                                entity.setTransactionIndex(typedResponse.log.getTransactionIndex());
-                                entity.setTransactionHash(typedResponse.log.getTransactionHash());
-                                entity.setLogIndex(typedResponse.log.getLogIndex());
+				var entity = new DelegationEventEntity();
+				entity.setFrom(typedResponse.from);
+				entity.setTo(typedResponse.to);
+				entity.setPriorVotePower(typedResponse.priorVotePower);
+				entity.setNewVotePower(typedResponse.newVotePower);
+				entity.setBlockNumber(typedResponse.log.getBlockNumber());
+				entity.setTransactionIndex(typedResponse.log.getTransactionIndex());
+				entity.setTransactionHash(typedResponse.log.getTransactionHash());
+				entity.setLogIndex(typedResponse.log.getLogIndex());
 
-                                delegationEntities.add(entity);
-                        }
+				delegationEntities.add(entity);
+			}
 
-                        var blockNumbersSet = delegationEntities.stream().map(entity -> entity.getBlockNumber())
-                                        .collect(Collectors.toSet());
-                        var fetchedDelegationEvents = this.delegationEventRepository
-                                        .findAllByBlockNumberIn(new ArrayList<BigInteger>(blockNumbersSet));
+			var blockNumbersSet = delegationEntities.stream().map(entity -> entity.getBlockNumber())
+					.collect(Collectors.toSet());
+			var fetchedDelegationEvents = this.delegationEventRepository
+					.findAllByBlockNumberIn(new ArrayList<BigInteger>(blockNumbersSet));
 
-                        var fetchedDelegationEventsMap = new HashMap<String, DelegationEventEntity>();
-                        fetchedDelegationEvents.forEach(event -> fetchedDelegationEventsMap.put(
-                                        event.getBlockNumber().toString() + "-" + event.getTransactionIndex().toString()
-                                                        + "-"
-                                                        + event.getLogIndex(),
-                                        event));
-                        delegationEntities.removeIf(event -> fetchedDelegationEventsMap
-                                        .containsKey(event.getBlockNumber().toString() + "-"
-                                                        + event.getTransactionIndex().toString() + "-"
-                                                        + event.getLogIndex()));
-                        this.delegationEventRepository.saveAll(delegationEntities);
+			var fetchedDelegationEventsMap = new HashMap<String, DelegationEventEntity>();
+			fetchedDelegationEvents.forEach(event -> fetchedDelegationEventsMap.put(
+					event.getBlockNumber().toString() + "-" + event.getTransactionIndex().toString()
+							+ "-"
+							+ event.getLogIndex(),
+					event));
+			delegationEntities.removeIf(event -> fetchedDelegationEventsMap
+					.containsKey(event.getBlockNumber().toString() + "-"
+							+ event.getTransactionIndex().toString() + "-"
+							+ event.getLogIndex()));
+			this.delegationEventRepository.saveAll(delegationEntities);
 
-                        Double completion = toBlock.doubleValue() / endBlock.doubleValue() * 100;
-                        String completionString = String.valueOf(Math.round(completion)) + "%";
+			Double completion = toBlock.doubleValue() / endBlock.doubleValue() * 100;
+			String completionString = String.valueOf(Math.round(completion)) + "%";
 
-                        if (!lastCompletionString.equals(completionString)) {
-                                lastCompletionString = completionString;
-                                logger.info(String.format(
-                                                "fetch delegate event completion: %s (%s/%s)",
-                                                completionString,
-                                                toBlock.toString(),
-                                                endBlock.toString()));
-                        }
+			if (!lastCompletionString.equals(completionString)) {
+				lastCompletionString = completionString;
+				logger.info(String.format(
+						"fetch delegate event completion: %s (%s/%s)",
+						completionString,
+						toBlock.toString(),
+						endBlock.toString()));
+			}
 
-                }
+		}
 
-        }
+	}
 
 }
