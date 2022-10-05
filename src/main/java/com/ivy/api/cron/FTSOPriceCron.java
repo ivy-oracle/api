@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.EventValues;
+import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -113,7 +114,7 @@ public class FTSOPriceCron {
 				PriceRevealedEventEntity price = new PriceRevealedEventEntity();
 
 				price.setSymbol(symbol);
-				price.setVoter((String) eventValues.getIndexedValues().get(0).getValue());
+				price.setVoter(Keys.toChecksumAddress((String) eventValues.getIndexedValues().get(0).getValue()));
 				price.setEpochId((BigInteger) eventValues.getIndexedValues().get(1).getValue());
 				price.setPrice((BigInteger) eventValues.getNonIndexedValues().get(0).getValue());
 				price.setRandom((BigInteger) eventValues.getNonIndexedValues().get(1).getValue());

@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.EventValues;
+import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -116,8 +117,8 @@ public class DelegationEventCron {
 				logger.debug(typedResponse.from);
 
 				var entity = new DelegationEventEntity();
-				entity.setFrom(typedResponse.from);
-				entity.setTo(typedResponse.to);
+				entity.setFrom(Keys.toChecksumAddress(typedResponse.from));
+				entity.setTo(Keys.toChecksumAddress(typedResponse.to));
 				entity.setPriorVotePower(typedResponse.priorVotePower);
 				entity.setNewVotePower(typedResponse.newVotePower);
 				entity.setBlockNumber(typedResponse.log.getBlockNumber());
