@@ -94,7 +94,7 @@ public class FTSOPriceCron {
 			}
 		}
 
-		logger.info(String.format(
+		logger.debug(String.format(
 				"fetched finalized and revealed prices from block %s to %s", fromBlock.toString(), toBlock.toString()));
 	}
 
