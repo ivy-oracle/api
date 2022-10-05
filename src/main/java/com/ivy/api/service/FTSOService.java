@@ -9,6 +9,7 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.response.EthBlock.Block;
 
+import com.ivy.api.dto.PriceEpochDTO;
 import com.ivy.api.dto.RewardEpochDTO;
 import com.ivy.api.util.CommonUtil;
 
@@ -46,5 +47,21 @@ public class FTSOService {
                     HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get reward epoch data", e);
         }
         return rewardEpochDTO;
+    }
+
+    public PriceEpochDTO getPriceEpoch() {
+        PriceEpochDTO priceEpochDTO;
+        try {
+            var ftsoManager = this.contractService.getFtsoManager();
+            var rawPriceEpoch = ftsoManager.getCurrentPriceEpochData().send();
+            // TODO: populate other price epoch information
+            priceEpochDTO = PriceEpochDTO.builder()
+                    .epochId(rawPriceEpoch.component1())
+                    .build();
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get reward epoch data", e);
+        }
+        return priceEpochDTO;
     }
 }
