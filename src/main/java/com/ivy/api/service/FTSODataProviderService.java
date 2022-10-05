@@ -20,7 +20,9 @@ import org.web3j.tuples.generated.Tuple2;
 
 import com.ivy.api.contract.VoterWhitelister;
 import com.ivy.api.dto.FTSODataProviderDTO;
+import com.ivy.api.dto.PriceEpochDTO;
 import com.ivy.api.dto.RewardEpochDTO;
+import com.ivy.api.repository.PriceFinalizedEventRepository;
 import com.ivy.api.repository.PriceRevealedEventRepository;
 import com.ivy.api.util.CommonUtil;
 
@@ -32,24 +34,45 @@ public class FTSODataProviderService {
     private final FTSOService ftsoService;
     private final VoterWhitelister voterWhitelister;
     private final PriceRevealedEventRepository priceRevealedEventRepository;
+    private final PriceFinalizedEventRepository priceFinalizedEventRepository;
 
-    public FTSODataProviderService(ContractService contractService, FTSOService ftsoService,
-            PriceRevealedEventRepository priceRevealedEventRepository) {
+    public FTSODataProviderService(
+            ContractService contractService,
+            FTSOService ftsoService,
+            PriceRevealedEventRepository priceRevealedEventRepository,
+            PriceFinalizedEventRepository priceFinalizedEventRepository) {
         this.contractService = contractService;
         this.ftsoService = ftsoService;
         this.voterWhitelister = this.contractService.getVoterWhitelister();
         this.priceRevealedEventRepository = priceRevealedEventRepository;
+        this.priceFinalizedEventRepository = priceFinalizedEventRepository;
     }
 
     public List<FTSODataProviderDTO> getAllFTSODataProviders() {
         var votersAddressMap = this.fetchAllWhitelistedVoters();
 
         RewardEpochDTO rewardEpochDTO = this.ftsoService.getRewardEpoch();
+        PriceEpochDTO priceEpochDTO = this.ftsoService.getPriceEpoch();
+        BigInteger priceEpochId = priceEpochDTO.getEpochId().subtract(BigInteger.ONE);
+
+        Map<String, Long> providerSubmissionCountMap = new HashMap<>();
+        var providerSubmissionCounts = this.priceRevealedEventRepository.getProviderSubmissionCounts(
+                priceEpochId.subtract(BigInteger.valueOf(120)),
+                priceEpochId);
+        providerSubmissionCounts.stream().forEach(psc -> {
+            providerSubmissionCountMap.put(Keys.toChecksumAddress(psc.getAddress()), psc.getSubmissionCount());
+        });
+        var totalSubmissionCount = this.priceFinalizedEventRepository.getCountInEpochRange(
+                priceEpochId.subtract(BigInteger.valueOf(120)),
+                priceEpochId);
 
         List<Future<FTSODataProviderDTO>> tasks = new ArrayList<>();
         votersAddressMap.forEach((address, whitelistedSymbols) -> {
             FTSODataProviderDTO ftsoDataProviderDTO = FTSODataProviderDTO.builder()
                     .address(address)
+                    .availability(
+                            providerSubmissionCountMap.getOrDefault(address, 0L).floatValue()
+                                    / totalSubmissionCount.floatValue())
                     .whitelistedSymbols(votersAddressMap.getOrDefault(address, List.of()))
                     .build();
             var task = this.executor.submit(
@@ -127,6 +150,7 @@ public class FTSODataProviderService {
     }
 
     private FTSODataProviderDTO resolveFromDatabase(FTSODataProviderDTO ftsoDataProviderDTO) {
+
         return ftsoDataProviderDTO;
     }
 
