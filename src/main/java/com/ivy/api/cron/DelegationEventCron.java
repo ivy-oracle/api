@@ -35,6 +35,9 @@ public class DelegationEventCron {
 	@Value("${jobs.delegation-event.enabled:true}")
 	private boolean isEnabled;
 
+	@Value("${web3.rpc.block-limit:30}")
+	private int rpcBlockLimit;
+
 	private final Web3j web3j;
 	private final ContractService contractService;
 	private final DelegationEventRepository delegationEventRepository;
@@ -58,7 +61,7 @@ public class DelegationEventCron {
 
 		VPContract vpContract = this.contractService.getVpContract();
 
-		BigInteger fetchBlockSize = BigInteger.valueOf(256);
+		BigInteger fetchBlockSize = BigInteger.valueOf(rpcBlockLimit);
 
 		// TODO: Set start block value by chain
 		// coston: 43369, songbird: 458, flare: 40
