@@ -28,7 +28,7 @@ import com.ivy.api.util.CommonUtil;
 
 @Service
 public class FTSODataProviderService {
-    ExecutorService executor = Executors.newFixedThreadPool(100);
+    ExecutorService executor = Executors.newFixedThreadPool(120);
 
     private final ContractService contractService;
     private final FTSOService ftsoService;
