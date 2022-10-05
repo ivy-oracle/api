@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.web3j.abi.EventEncoder;
@@ -30,6 +31,9 @@ import com.ivy.api.service.ContractService;
 public class DelegationEventCron {
 	Logger logger = LoggerFactory.getLogger(DelegationEventCron.class);
 
+	@Value("${jobs.delegation-event.enabled:true}")
+	private boolean isEnabled;
+
 	private final Web3j web3j;
 	private final ContractService contractService;
 	private final DelegationEventRepository delegationEventRepository;
@@ -44,6 +48,10 @@ public class DelegationEventCron {
 
 	@Scheduled(fixedDelay = 60 * 60 * 1000)
 	public void fetchDelegateEvents() throws IOException {
+		if (!isEnabled) {
+			return;
+		}
+
 		VPContract vpContract = this.contractService.getVpContract();
 
 		BigInteger fetchBlockSize = BigInteger.valueOf(256);

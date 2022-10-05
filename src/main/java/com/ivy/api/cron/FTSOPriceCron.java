@@ -5,6 +5,7 @@ import java.math.BigInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.web3j.abi.EventEncoder;
@@ -27,6 +28,9 @@ import com.ivy.api.service.ContractService;
 public class FTSOPriceCron {
 	Logger logger = LoggerFactory.getLogger(FTSOPriceCron.class);
 
+	@Value("${jobs.ftso-price.enabled:true}")
+	private boolean isEnabled;
+
 	private final Web3j web3j;
 	private final ContractService contractService;
 	private final PriceFinalizedEventRepository priceFinalizedEventEntityRepository;
@@ -45,6 +49,10 @@ public class FTSOPriceCron {
 
 	@Scheduled(fixedDelay = 180 * 1000)
 	public void fetchPrices() throws IOException {
+		if (!isEnabled) {
+			return;
+		}
+
 		int priceFinalizedFetchCount = 0;
 		int priceRevealedFetchedCount = 0;
 
