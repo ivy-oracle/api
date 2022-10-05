@@ -24,6 +24,7 @@ import org.web3j.tx.Contract;
 import com.ivy.api.contract.VPContract;
 import com.ivy.api.contract.VPContract.DelegateEventResponse;
 import com.ivy.api.repository.DelegationEventRepository;
+import com.ivy.api.repository.DelegationRepository;
 import com.ivy.api.repository.entity.DelegationEventEntity;
 import com.ivy.api.service.ContractService;
 
@@ -37,13 +38,16 @@ public class DelegationEventCron {
 	private final Web3j web3j;
 	private final ContractService contractService;
 	private final DelegationEventRepository delegationEventRepository;
+	private final DelegationRepository delegationRepository;
 
 	public DelegationEventCron(
 			Web3j web3j, ContractService contractService,
-			DelegationEventRepository delegationEventRepository) {
+			DelegationEventRepository delegationEventRepository,
+			DelegationRepository delegationRepository) {
 		this.web3j = web3j;
 		this.contractService = contractService;
 		this.delegationEventRepository = delegationEventRepository;
+		this.delegationRepository = delegationRepository;
 	}
 
 	@Scheduled(fixedDelay = 60 * 60 * 1000)
@@ -88,6 +92,9 @@ public class DelegationEventCron {
 			filter.addSingleTopic(EventEncoder.encode(VPContract.DELEGATE_EVENT));
 
 			var logs = web3j.ethGetLogs(filter).send().getLogs();
+			if (logs == null) {
+				continue;
+			}
 
 			var delegationEntities = new ArrayList<DelegationEventEntity>();
 			for (int logIndex = 0; logIndex < logs.size(); logIndex++) {
@@ -149,6 +156,11 @@ public class DelegationEventCron {
 
 		}
 
+		logger.info("fetch delegate events completed, refreshing view...");
+
+		this.delegationRepository.refreshMaterializedView();
+
+		logger.info("delegation materialized view refreshed");
 	}
 
 }
