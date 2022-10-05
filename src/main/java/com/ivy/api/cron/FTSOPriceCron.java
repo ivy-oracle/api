@@ -47,7 +47,7 @@ public class FTSOPriceCron {
 		this.priceRevealedEventEntityRepository = priceRevealedEventEntityRepository;
 	}
 
-	@Scheduled(fixedDelay = 180 * 1000)
+	@Scheduled(cron = "*/180 * * * * *")
 	public void fetchPrices() throws IOException {
 		if (!isEnabled) {
 			return;
@@ -59,6 +59,7 @@ public class FTSOPriceCron {
 		BigInteger latestBlockNumber = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
 				.send().getBlock().getNumber();
 
+		// TODO: Do this concurrently
 		for (String symbol : this.contractService.getFtsos().keySet()) {
 			var ftso = this.contractService.getFtso(symbol);
 			BigInteger fromBlock = latestBlockNumber.subtract(BigInteger.valueOf(250));
@@ -130,7 +131,7 @@ public class FTSOPriceCron {
 				}
 			}
 		}
-		logger.debug(String.format(
+		logger.info(String.format(
 				"fetched %d finalized and %d revealed prices",
 				priceFinalizedFetchCount,
 				priceRevealedFetchedCount));
