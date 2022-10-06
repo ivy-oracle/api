@@ -1,9 +1,5 @@
 # Ivy API
 
-```sh
-./mvnw spring-boot:run
-```
+This project is under active development
 
-```sh
-web3j generate solidity -a abi/PriceSubmitter.abi -o ./src/main/java -p com.ivy.api.contract
-```
+We are active looking for contributors, if you are interested, please @ivy_oracle on twitter to get involved.
