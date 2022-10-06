@@ -112,12 +112,24 @@ public class FTSODataProviderService {
         PriceEpochDTO priceEpochDTO = this.ftsoService.getPriceEpoch();
         BigInteger priceEpochId = priceEpochDTO.getEpochId().subtract(BigInteger.ONE);
 
+        var submissionCount = this.priceRevealedEventRepository
+                .getProviderSubmissionCountByAddress(checkedSumAddress, priceEpochId.subtract(BigInteger.valueOf(120)),
+                        priceEpochId)
+                .getSubmissionCount();
+        var totalSubmissionCount = this.priceFinalizedEventRepository.getCountInEpochRange(
+                priceEpochId.subtract(BigInteger.valueOf(120)),
+                priceEpochId);
+
         var accuracyDTO = this.priceFinalizedEventRepository.getProviderAccuracyByAddress(
                 checkedSumAddress,
                 priceEpochId.subtract(BigInteger.valueOf(120)),
                 priceEpochId);
+
         FTSODataProviderDTO ftsoDataProviderDTO = FTSODataProviderDTO.builder()
                 .address(checkedSumAddress)
+                .availability(
+                        submissionCount.floatValue()
+                                / totalSubmissionCount.floatValue())
                 .accuracy(accuracyDTO.getAccuracy())
                 .whitelistedSymbols(votersAddressMap.getOrDefault(checkedSumAddress, List.of()))
                 .build();
