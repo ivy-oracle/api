@@ -33,3 +33,8 @@ build/
 .vscode/
 
 src/main/resources/application-local.properties
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
