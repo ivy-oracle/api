@@ -4,6 +4,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,9 +30,13 @@ public class DelegationController {
     ResponseEntity<PaginatedDTO<DelegationDTO>> getDataProviders(
             @RequestParam(name = "from", required = false) Optional<String> fromAddress,
             @RequestParam(name = "to", required = false) Optional<String> toAddress,
+            @RequestParam(name = "sort", defaultValue = "amount") String sortColumn,
+            @RequestParam(name = "sortBy", defaultValue = "desc") String sortBy,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        var delegations = this.delegationService.getDelegations(fromAddress, toAddress, PageRequest.of(page, size));
+        Sort sort = Sort.by(sortBy == "asc" ? Direction.ASC : Direction.DESC, sortColumn);
+        var delegations = this.delegationService.getDelegations(fromAddress, toAddress,
+                PageRequest.of(page, size, sort));
         var response = new PaginatedDTO<DelegationDTO>(
                 delegations.getContent().stream().map(delegation -> delegation.toDto()).collect(Collectors.toList()),
                 page,
