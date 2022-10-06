@@ -91,7 +91,7 @@ public class FTSODataProviderService {
         List<FTSODataProviderDTO> results = new ArrayList<>();
         for (var task : tasks) {
             try {
-                results.add(this.resolveFromDatabase(task.get()));
+                results.add(task.get());
             } catch (ExecutionException e) {
                 throw new ResponseStatusException(
                         HttpStatus.INTERNAL_SERVER_ERROR, "failed to resolve FTSO data providers", e);
@@ -140,7 +140,7 @@ public class FTSODataProviderService {
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR, "failed to resolve FTSO data provider", e);
         }
-        return this.resolveFromDatabase(ftsoDataProviderDTO);
+        return ftsoDataProviderDTO;
     }
 
     private Map<String, List<String>> fetchAllWhitelistedVoters() {
@@ -174,11 +174,6 @@ public class FTSODataProviderService {
             }
         }
         return votersAddressMap;
-    }
-
-    private FTSODataProviderDTO resolveFromDatabase(FTSODataProviderDTO ftsoDataProviderDTO) {
-
-        return ftsoDataProviderDTO;
     }
 
     private class FTSODataProviderWeb3Resolver implements Callable<FTSODataProviderDTO> {
