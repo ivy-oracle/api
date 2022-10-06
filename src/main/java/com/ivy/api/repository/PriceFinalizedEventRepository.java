@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.ivy.api.repository.dto.FTSODataProviderAccuracyDTO;
 import com.ivy.api.repository.entity.PriceFinalizedEventEntity;
 
 @Repository
@@ -22,5 +23,31 @@ public interface PriceFinalizedEventRepository extends JpaRepository<PriceFinali
 
     @Query(value = "select count(*) from price_finalized_event where epoch_id > :startEpochId and epoch_id < (:endEpochId + 1)", nativeQuery = true)
     public Long getCountInEpochRange(@Param("startEpochId") BigInteger startEpochId,
+            @Param("endEpochId") BigInteger endEpochId);
+
+    @Query(value = "select epr.voter as address, sum(" +
+            "case when epr.price = epf.low_reward_price then 0.5 " +
+            "when epr.price = epf.high_reward_price then 0.5 " +
+            "when epr.price > epf.low_reward_price and epr.price < epf.high_reward_price then 1.0 " +
+            "else 0.0 end) / count(*) as accuracy " +
+            "from price_revealed_event epr join price_finalized_event epf " +
+            "on epf.epoch_id = epr.epoch_id and epf.symbol = epr.symbol " +
+            "where epr.epoch_id > :startEpochId and epr.epoch_id < (:endEpochId + 1) group by epr.voter;", nativeQuery = true)
+    public List<FTSODataProviderAccuracyDTO> getProviderAccuracies(
+            @Param("startEpochId") BigInteger startEpochId,
+            @Param("endEpochId") BigInteger endEpochId);
+
+    @Query(value = "select epr.voter as address, sum(" +
+            "case when epr.price = epf.low_reward_price then 0.5 " +
+            "when epr.price = epf.high_reward_price then 0.5 " +
+            "when epr.price > epf.low_reward_price and epr.price < epf.high_reward_price then 1.0 " +
+            "else 0.0 end) / count(*) as accuracy " +
+            "from price_revealed_event epr join price_finalized_event epf " +
+            "on epf.epoch_id = epr.epoch_id and epf.symbol = epr.symbol " +
+            "where epr.epoch_id > :startEpochId and epr.epoch_id < (:endEpochId + 1) " +
+            "and epr.voter = :address group by epr.voter;", nativeQuery = true)
+    public FTSODataProviderAccuracyDTO getProviderAccuracyByAddress(
+            @Param("address") String address,
+            @Param("startEpochId") BigInteger startEpochId,
             @Param("endEpochId") BigInteger endEpochId);
 }

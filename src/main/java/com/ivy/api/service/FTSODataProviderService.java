@@ -66,6 +66,13 @@ public class FTSODataProviderService {
                 priceEpochId.subtract(BigInteger.valueOf(120)),
                 priceEpochId);
 
+        Map<String, Float> providerAccuracyMap = new HashMap<>();
+        var providerAccuracies = this.priceFinalizedEventRepository.getProviderAccuracies(
+                priceEpochId.subtract(BigInteger.valueOf(120)),
+                priceEpochId);
+        providerAccuracies.forEach(providerAccuracy -> providerAccuracyMap.put(providerAccuracy.getAddress(),
+                providerAccuracy.getAccuracy()));
+
         List<Future<FTSODataProviderDTO>> tasks = new ArrayList<>();
         votersAddressMap.forEach((address, whitelistedSymbols) -> {
             FTSODataProviderDTO ftsoDataProviderDTO = FTSODataProviderDTO.builder()
@@ -73,6 +80,7 @@ public class FTSODataProviderService {
                     .availability(
                             providerSubmissionCountMap.getOrDefault(address, 0L).floatValue()
                                     / totalSubmissionCount.floatValue())
+                    .accuracy(providerAccuracyMap.getOrDefault(address, 0f))
                     .whitelistedSymbols(votersAddressMap.getOrDefault(address, List.of()))
                     .build();
             var task = this.executor.submit(
@@ -101,9 +109,16 @@ public class FTSODataProviderService {
         var votersAddressMap = this.fetchAllWhitelistedVoters();
 
         RewardEpochDTO rewardEpochDTO = this.ftsoService.getRewardEpoch();
+        PriceEpochDTO priceEpochDTO = this.ftsoService.getPriceEpoch();
+        BigInteger priceEpochId = priceEpochDTO.getEpochId().subtract(BigInteger.ONE);
 
+        var accuracyDTO = this.priceFinalizedEventRepository.getProviderAccuracyByAddress(
+                checkedSumAddress,
+                priceEpochId.subtract(BigInteger.valueOf(120)),
+                priceEpochId);
         FTSODataProviderDTO ftsoDataProviderDTO = FTSODataProviderDTO.builder()
                 .address(checkedSumAddress)
+                .accuracy(accuracyDTO.getAccuracy())
                 .whitelistedSymbols(votersAddressMap.getOrDefault(checkedSumAddress, List.of()))
                 .build();
 
