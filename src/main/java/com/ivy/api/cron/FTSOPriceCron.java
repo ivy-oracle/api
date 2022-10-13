@@ -71,8 +71,17 @@ public class FTSOPriceCron {
 			return;
 		}
 
-		BigInteger latestBlockNumber = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
-				.send().getBlock().getNumber();
+		logger.debug("fetch ftso price revealed and finalized");
+
+		BigInteger latestBlockNumber;
+		try {
+			latestBlockNumber = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
+					.send().getBlock().getNumber();
+		} catch (IOException e) {
+			logger.error("failed to fetch latest block number", e);
+			return;
+		}
+
 		BigInteger fromBlock = latestBlockNumber.subtract(BigInteger.valueOf(Math.min(rpcBlockLimit, 100)));
 		BigInteger toBlock = latestBlockNumber.subtract(BigInteger.ONE);
 
