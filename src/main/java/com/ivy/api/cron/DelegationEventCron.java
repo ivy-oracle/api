@@ -77,7 +77,7 @@ public class DelegationEventCron {
 				.send().getBlock();
 		BigInteger endBlock = block.getNumber();
 
-		logger.info(String.format(
+		logger.debug(String.format(
 				"fetching delegate event from block %s to block %s",
 				startBlock.toString(0),
 				endBlock.toString(0)));
@@ -114,8 +114,6 @@ public class DelegationEventCron {
 				typedResponse.newVotePower = (BigInteger) eventValues.getNonIndexedValues().get(1)
 						.getValue();
 
-				logger.debug(typedResponse.from);
-
 				var entity = new DelegationEventEntity();
 				entity.setFrom(Keys.toChecksumAddress(typedResponse.from));
 				entity.setTo(Keys.toChecksumAddress(typedResponse.to));
@@ -151,7 +149,7 @@ public class DelegationEventCron {
 
 			if (!lastCompletionString.equals(completionString)) {
 				lastCompletionString = completionString;
-				logger.info(String.format(
+				logger.debug(String.format(
 						"fetch delegate event completion: %s (%s/%s)",
 						completionString,
 						toBlock.toString(),
@@ -160,11 +158,11 @@ public class DelegationEventCron {
 
 		}
 
-		logger.info("fetch delegate events completed, refreshing view...");
+		logger.debug("fetch delegate events completed, refreshing view...");
 
 		this.delegationRepository.refreshMaterializedView();
 
-		logger.info("delegation materialized view refreshed");
+		logger.debug("delegation materialized view refreshed");
 	}
 
 }
