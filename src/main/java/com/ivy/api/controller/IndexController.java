@@ -13,6 +13,11 @@ public class IndexController {
         this.configurableEnvironment = configurableEnvironment;
     }
 
+    @GetMapping("/")
+    public ResponseEntity<String> index() {
+        return ResponseEntity.ok("Ivy API");
+    }
+
     @GetMapping("/ping")
     public ResponseEntity<String> ping() {
         return ResponseEntity.ok("pong");
