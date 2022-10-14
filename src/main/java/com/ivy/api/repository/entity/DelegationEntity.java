@@ -40,7 +40,6 @@ public class DelegationEntity {
 
     public DelegationDTO toDto() {
         return new DelegationDTO(
-                this.ID,
                 this.fromAddress,
                 this.toAddress,
                 this.amount,

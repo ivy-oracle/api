@@ -13,9 +13,6 @@ import javax.validation.constraints.NotNull;
 @SuperBuilder
 public class DelegationDTO {
     @NotNull
-    private String id;
-
-    @NotNull
     private String fromAddress;
 
     @NotNull
