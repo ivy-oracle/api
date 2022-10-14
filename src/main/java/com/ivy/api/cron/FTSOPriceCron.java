@@ -3,12 +3,15 @@ package com.ivy.api.cron;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,15 +88,18 @@ public class FTSOPriceCron {
 		BigInteger fromBlock = latestBlockNumber.subtract(BigInteger.valueOf(Math.min(rpcBlockLimit, 100)));
 		BigInteger toBlock = latestBlockNumber.subtract(BigInteger.ONE);
 
-		List<Future<Boolean>> futures = new ArrayList<>();
+		List<Future<List<PriceRevealedEventEntity>>> priceRevealedFutures = new ArrayList<>();
 		for (String symbol : this.contractService.getFtsos().keySet()) {
-			var future = executor.submit(new PriceFetchCallable(symbol, fromBlock, toBlock, contractService,
-					priceFinalizedEventRepository, priceRevealedEventRepository));
-			futures.add(future);
+			var priceRevealedFuture = executor
+					.submit(new PriceRevealedFetchCallable(symbol, fromBlock, toBlock, contractService,
+							priceFinalizedEventRepository, priceRevealedEventRepository));
+			priceRevealedFutures.add(priceRevealedFuture);
 		}
-		for (var future : futures) {
+
+		List<PriceRevealedEventEntity> priceRevealedEventEntities = new ArrayList<>();
+		for (var future : priceRevealedFutures) {
 			try {
-				future.get();
+				priceRevealedEventEntities.addAll(future.get());
 			} catch (ExecutionException e) {
 				throw new ResponseStatusException(
 						HttpStatus.INTERNAL_SERVER_ERROR, "failed to resolve FTSO data providers", e);
@@ -102,20 +108,70 @@ public class FTSOPriceCron {
 						HttpStatus.INTERNAL_SERVER_ERROR, "failed to resolve FTSO data providers", e);
 			}
 		}
+		var fetchedRevealedPriceEpochIds = priceRevealedEventEntities.stream().map(price -> price.getEpochId())
+				.collect(Collectors.toSet());
+		var existingRevealedPriceKeys = this.priceRevealedEventRepository
+				.findAllByEpochIdIn(fetchedRevealedPriceEpochIds).stream()
+				.map(price -> price.getEpochId().toString() + price.getSymbol() + price.getVoter())
+				.collect(Collectors.toList());
+		List<PriceRevealedEventEntity> priceRevealedEventEntitiesToPersist = new ArrayList<>();
+		for (var price : priceRevealedEventEntities) {
+			if (!existingRevealedPriceKeys
+					.contains(price.getEpochId().toString() + price.getSymbol() + price.getVoter())) {
+				priceRevealedEventEntitiesToPersist.add(price);
+			}
+		}
+		if (priceRevealedEventEntitiesToPersist.size() > 0) {
+			this.priceRevealedEventRepository.saveAll(priceRevealedEventEntitiesToPersist);
+		}
+
+		List<Future<List<PriceFinalizedEventEntity>>> priceFinalizedFutures = new ArrayList<>();
+		for (String symbol : this.contractService.getFtsos().keySet()) {
+			var priceFinalizedFuture = executor
+					.submit(new PriceFinalizedFetchCallable(symbol, fromBlock, toBlock, contractService,
+							priceFinalizedEventRepository, priceRevealedEventRepository));
+			priceFinalizedFutures.add(priceFinalizedFuture);
+		}
+
+		List<PriceFinalizedEventEntity> priceFinalizedEventEntities = new ArrayList<>();
+		for (var future : priceFinalizedFutures) {
+			try {
+				priceFinalizedEventEntities.addAll(future.get());
+			} catch (ExecutionException e) {
+				throw new ResponseStatusException(
+						HttpStatus.INTERNAL_SERVER_ERROR, "failed to resolve FTSO data providers", e);
+			} catch (InterruptedException e) {
+				throw new ResponseStatusException(
+						HttpStatus.INTERNAL_SERVER_ERROR, "failed to resolve FTSO data providers", e);
+			}
+		}
+		var fetchedEpochIds = priceFinalizedEventEntities.stream().map(price -> price.getEpochId())
+				.collect(Collectors.toSet());
+		var existingFinalizedPrices = this.priceFinalizedEventRepository.findAllByEpochIdIn(fetchedEpochIds);
+		var existingFinalizedPricesKeys = existingFinalizedPrices.stream()
+				.map(price -> price.getEpochId().toString() + price.getSymbol()).collect(Collectors.toList());
+		List<PriceFinalizedEventEntity> priceFinalizedEventEntitiesToPersist = new ArrayList<>();
+		for (var price : priceFinalizedEventEntities) {
+			if (!existingFinalizedPricesKeys.contains(price.getEpochId().toString() + price.getSymbol())) {
+				priceFinalizedEventEntitiesToPersist.add(price);
+			}
+		}
+		if (priceFinalizedEventEntitiesToPersist.size() > 0) {
+			this.priceFinalizedEventRepository.saveAll(priceFinalizedEventEntitiesToPersist);
+		}
 
 		logger.debug(String.format(
-				"fetched finalized and revealed prices from block %s to %s", fromBlock.toString(), toBlock.toString()));
+				"fetched %d finalized and %d revealed prices from block %s to %s",
+				priceFinalizedEventEntitiesToPersist.size(), 1, fromBlock.toString(), toBlock.toString()));
 	}
 
-	public class PriceFetchCallable implements Callable<Boolean> {
+	public class PriceFinalizedFetchCallable implements Callable<List<PriceFinalizedEventEntity>> {
 		private final String symbol;
 		private final BigInteger fromBlock;
 		private final BigInteger toBlock;
 		private final ContractService contractService;
-		private final PriceFinalizedEventRepository priceFinalizedEventRepository;
-		private final PriceRevealedEventRepository priceRevealedEventRepository;
 
-		public PriceFetchCallable(
+		public PriceFinalizedFetchCallable(
 				String symbol,
 				BigInteger fromBlock,
 				BigInteger toBlock,
@@ -126,13 +182,12 @@ public class FTSOPriceCron {
 			this.fromBlock = fromBlock;
 			this.toBlock = toBlock;
 			this.contractService = contractService;
-			this.priceFinalizedEventRepository = priceFinalizedEventRepository;
-			this.priceRevealedEventRepository = priceRevealedEventRepository;
 		}
 
 		@Override
-		public Boolean call() throws IOException {
+		public List<PriceFinalizedEventEntity> call() throws IOException {
 			var ftso = this.contractService.getFtso(symbol);
+			List<PriceFinalizedEventEntity> prices = new ArrayList<>();
 
 			EthFilter priceFinalizedFilter = new EthFilter(
 					DefaultBlockParameter.valueOf(fromBlock),
@@ -159,14 +214,36 @@ public class FTSOPriceCron {
 							(BigInteger) eventValues.getNonIndexedValues().get(4).getValue());
 					price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(5).getValue());
 
-					var savedPrice = this.priceFinalizedEventRepository.findByEpochIdAndSymbol(
-							price.getEpochId(),
-							symbol);
-					if (savedPrice == null) {
-						this.priceFinalizedEventRepository.save(price);
-					}
+					prices.add(price);
 				}
 			}
+			return prices;
+		};
+	}
+
+	public class PriceRevealedFetchCallable implements Callable<List<PriceRevealedEventEntity>> {
+		private final String symbol;
+		private final BigInteger fromBlock;
+		private final BigInteger toBlock;
+		private final ContractService contractService;
+
+		public PriceRevealedFetchCallable(
+				String symbol,
+				BigInteger fromBlock,
+				BigInteger toBlock,
+				ContractService contractService,
+				PriceFinalizedEventRepository priceFinalizedEventRepository,
+				PriceRevealedEventRepository priceRevealedEventRepository) {
+			this.symbol = symbol;
+			this.fromBlock = fromBlock;
+			this.toBlock = toBlock;
+			this.contractService = contractService;
+		}
+
+		@Override
+		public List<PriceRevealedEventEntity> call() throws IOException {
+			var ftso = this.contractService.getFtso(symbol);
+			List<PriceRevealedEventEntity> prices = new ArrayList<>();
 
 			EthFilter priceRevealedFilter = new EthFilter(
 					DefaultBlockParameter.valueOf(fromBlock),
@@ -192,16 +269,11 @@ public class FTSOPriceCron {
 					price.setVotePowerAsset(
 							(BigInteger) eventValues.getNonIndexedValues().get(4).getValue());
 
-					var savedPrice = this.priceRevealedEventRepository
-							.findByEpochIdAndSymbolAndVoter(price.getEpochId(), symbol,
-									price.getVoter());
-					if (savedPrice == null) {
-						this.priceRevealedEventRepository.save(price);
-					}
+					prices.add(price);
 				}
 			}
 
-			return true;
+			return prices;
 		};
 	}
 }
