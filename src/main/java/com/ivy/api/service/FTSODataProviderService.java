@@ -258,7 +258,7 @@ public class FTSODataProviderService {
 			var totalRewards = FTSODataProviderService.this.getTotalRewards(address, this.rewardEpochDTO.getEpochId());
 			ftsoDataProviderDTO.setTotalRewards(totalRewards);
 
-			var rewardRate = totalRewards / lockedVotePower;
+			var rewardRate = totalRewards / lockedVotePower * (1 - ftsoDataProviderDTO.getFee());
 			ftsoDataProviderDTO.setRewardRate((float) rewardRate);
 
 			var feeChanges = FTSODataProviderService.this.getScheduledFeeChanges(address);
