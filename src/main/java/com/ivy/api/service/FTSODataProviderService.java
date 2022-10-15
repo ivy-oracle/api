@@ -50,6 +50,11 @@ public class FTSODataProviderService {
 		this.priceFinalizedEventRepository = priceFinalizedEventRepository;
 	}
 
+	public List<String> getAllFTSODataProviderAddresses() {
+		var votersAddressMap = this.fetchAllWhitelistedVoters();
+		return new ArrayList<>(votersAddressMap.keySet());
+	}
+
 	public List<FTSODataProviderDTO> getAllFTSODataProviders() {
 		var votersAddressMap = this.fetchAllWhitelistedVoters();
 

@@ -27,6 +27,11 @@ public class FTSODataProviderController {
         return ResponseEntity.ok(providers);
     }
 
+    @GetMapping("/addresses")
+    ResponseEntity<List<String>> getDataProviderAddresses() {
+        return ResponseEntity.ok(this.ftsoDataProviderService.getAllFTSODataProviderAddresses());
+    }
+
     @GetMapping("/{address}")
     ResponseEntity<FTSODataProviderDTO> getDataProvider(@PathVariable("address") String address) {
         var provider = this.ftsoDataProviderService.getFTSODataProvider(address);
