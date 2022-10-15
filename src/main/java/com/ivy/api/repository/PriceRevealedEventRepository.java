@@ -22,12 +22,12 @@ public interface PriceRevealedEventRepository extends JpaRepository<PriceReveale
 	public List<PriceRevealedEventEntity> findAllByEpochIdIn(Set<BigInteger> epochIds);
 
 	@Query(value = "select voter as address, count(epoch_id) as submissionCount "
-			+ "from price_revealed_event where epoch_id > :startEpochId and epoch_id < (:endEpochId + 1) group by voter", nativeQuery = true)
+			+ "from price_revealed_event where epoch_id > (:startEpochId - 1) and epoch_id < :endEpochId group by voter", nativeQuery = true)
 	public List<FTSODataProviderSubmissionCountDTO> getProviderSubmissionCounts(
 			@Param("startEpochId") BigInteger startEpochId, @Param("endEpochId") BigInteger endEpochId);
 
 	@Query(value = "select voter as address, count(epoch_id) as submissionCount " +
-			"from price_revealed_event where epoch_id > :startEpochId and epoch_id < (:endEpochId + 1) " +
+			"from price_revealed_event where epoch_id > (:startEpochId - 1) and epoch_id < :endEpochId " +
 			" and voter = :address group by voter", nativeQuery = true)
 	public FTSODataProviderSubmissionCountDTO getProviderSubmissionCountByAddress(
 			@Param("address") String address,
