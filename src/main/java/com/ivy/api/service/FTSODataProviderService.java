@@ -85,8 +85,10 @@ public class FTSODataProviderService {
 			FTSODataProviderDTO ftsoDataProviderDTO = FTSODataProviderDTO.builder()
 					.address(address)
 					.availability(
-							providerSubmissionCountMap.getOrDefault(address, 0L).floatValue()
-									/ totalSubmissionCount.floatValue())
+							totalSubmissionCount.floatValue() != 0f
+									? providerSubmissionCountMap.getOrDefault(address, 0L).floatValue()
+											/ totalSubmissionCount.floatValue()
+									: 0f)
 					.accuracy(providerAccuracyMap.getOrDefault(address, 0f))
 					.whitelistedSymbols(votersAddressMap.getOrDefault(address, List.of()))
 					.build();
@@ -119,10 +121,11 @@ public class FTSODataProviderService {
 		PriceEpochDTO priceEpochDTO = this.ftsoService.getPriceEpoch();
 		BigInteger priceEpochId = priceEpochDTO.getEpochId().subtract(BigInteger.ONE);
 
-		var submissionCount = this.priceRevealedEventRepository
+		var submissionCountDTO = this.priceRevealedEventRepository
 				.getProviderSubmissionCountByAddress(checkedSumAddress, priceEpochId.subtract(BigInteger.valueOf(120)),
-						priceEpochId)
-				.getSubmissionCount();
+						priceEpochId);
+		Long submissionCount = submissionCountDTO != null ? submissionCountDTO.getSubmissionCount() : 0L;
+
 		var totalSubmissionCount = this.priceFinalizedEventRepository.getCountInEpochRange(
 				priceEpochId.subtract(BigInteger.valueOf(120)),
 				priceEpochId);
@@ -131,13 +134,14 @@ public class FTSODataProviderService {
 				checkedSumAddress,
 				priceEpochId.subtract(BigInteger.valueOf(120)),
 				priceEpochId);
+		var accuracy = accuracyDTO != null ? accuracyDTO.getAccuracy() : 0f;
 
 		FTSODataProviderDTO ftsoDataProviderDTO = FTSODataProviderDTO.builder()
 				.address(checkedSumAddress)
 				.availability(
-						submissionCount.floatValue()
-								/ totalSubmissionCount.floatValue())
-				.accuracy(accuracyDTO.getAccuracy())
+						totalSubmissionCount.floatValue() != 0f ? submissionCount.floatValue()
+								/ totalSubmissionCount.floatValue() : 0f)
+				.accuracy(accuracy)
 				.whitelistedSymbols(votersAddressMap.getOrDefault(checkedSumAddress, List.of()))
 				.build();
 
