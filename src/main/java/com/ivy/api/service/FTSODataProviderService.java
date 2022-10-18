@@ -13,6 +13,8 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,8 +31,14 @@ import com.ivy.api.repository.PriceRevealedEventRepository;
 import com.ivy.api.util.CommonUtil;
 
 @Service
+@Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class FTSODataProviderService {
 	ExecutorService executor = Executors.newFixedThreadPool(120);
+
+	/**
+	 * Call internal methods using `self` to use caching
+	 */
+	FTSODataProviderService self;
 
 	private final ContractService contractService;
 	private final FTSOService ftsoService;
@@ -39,10 +47,12 @@ public class FTSODataProviderService {
 	private final PriceFinalizedEventRepository priceFinalizedEventRepository;
 
 	public FTSODataProviderService(
+			FTSODataProviderService self,
 			ContractService contractService,
 			FTSOService ftsoService,
 			PriceRevealedEventRepository priceRevealedEventRepository,
 			PriceFinalizedEventRepository priceFinalizedEventRepository) {
+		this.self = self;
 		this.contractService = contractService;
 		this.ftsoService = ftsoService;
 		this.voterWhitelister = this.contractService.getVoterWhitelister();
@@ -51,12 +61,13 @@ public class FTSODataProviderService {
 	}
 
 	public List<String> getAllFTSODataProviderAddresses() {
-		var votersAddressMap = this.fetchAllWhitelistedVoters();
+		var votersAddressMap = self.fetchAllWhitelistedVoters();
 		return new ArrayList<>(votersAddressMap.keySet());
 	}
 
+	@Cacheable(value = "FTSODataProviderService.getAllFTSODataProviders")
 	public List<FTSODataProviderDTO> getAllFTSODataProviders() {
-		var votersAddressMap = this.fetchAllWhitelistedVoters();
+		var votersAddressMap = self.fetchAllWhitelistedVoters();
 
 		RewardEpochDTO rewardEpochDTO = this.ftsoService.getRewardEpoch();
 		PriceEpochDTO priceEpochDTO = this.ftsoService.getPriceEpoch();
@@ -113,9 +124,10 @@ public class FTSODataProviderService {
 		return results;
 	}
 
+	@Cacheable(value = "FTSODataProviderService.getFTSODataProvider")
 	public FTSODataProviderDTO getFTSODataProvider(String address) {
 		var checkedSumAddress = Keys.toChecksumAddress(address);
-		var votersAddressMap = this.fetchAllWhitelistedVoters();
+		var votersAddressMap = self.fetchAllWhitelistedVoters();
 
 		RewardEpochDTO rewardEpochDTO = this.ftsoService.getRewardEpoch();
 		PriceEpochDTO priceEpochDTO = this.ftsoService.getPriceEpoch();
@@ -155,7 +167,7 @@ public class FTSODataProviderService {
 	}
 
 	@Cacheable(value = "FTSODataProviderService.fetchAllWhitelistedVoters")
-	private Map<String, List<String>> fetchAllWhitelistedVoters() {
+	public Map<String, List<String>> fetchAllWhitelistedVoters() {
 		Tuple2<List<BigInteger>, List<String>> supportedIndicesAndSymbols;
 		try {
 			supportedIndicesAndSymbols = this.contractService.getFtsoRegistry().getSupportedIndicesAndSymbols().send();
@@ -166,11 +178,23 @@ public class FTSODataProviderService {
 
 		Map<String, List<String>> votersAddressMap = new HashMap<String, List<String>>();
 
+		List<Future<List<String>>> futures = new ArrayList<>();
 		for (String symbol : supportedIndicesAndSymbols.component2()) {
+			var future = this.executor.submit(new Callable<List<String>>() {
+				public List<String> call() {
+					return fetchAllWhitelistedVotersBySymbol(symbol);
+				}
+			});
+			futures.add(future);
+		}
+		for (int i = 0; i < futures.size(); i++) {
 			try {
-				var votersAddress = voterWhitelister.getFtsoWhitelistedPriceProvidersBySymbol(symbol).send();
-				for (int i = 0; i < votersAddress.size(); i++) {
-					var address = Keys.toChecksumAddress((String) votersAddress.get(i));
+				var votersAddress = futures.get(i).get();
+				var symbol = supportedIndicesAndSymbols.component2().get(i);
+
+				voterWhitelister.getFtsoWhitelistedPriceProvidersBySymbol(symbol).send();
+				for (int j = 0; j < votersAddress.size(); j++) {
+					var address = Keys.toChecksumAddress((String) votersAddress.get(j));
 					if (votersAddressMap.containsKey(address)) {
 						var updatedWhitelistedSymbols = votersAddressMap.get(address).stream()
 								.collect(Collectors.toList());
@@ -188,20 +212,30 @@ public class FTSODataProviderService {
 		return votersAddressMap;
 	}
 
+	private List<String> fetchAllWhitelistedVotersBySymbol(String symbol) {
+		try {
+			List<String> votersAddress = voterWhitelister.getFtsoWhitelistedPriceProvidersBySymbol(symbol).send();
+			return votersAddress;
+		} catch (Exception e) {
+			throw new ResponseStatusException(
+					HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get supported FTSO indices and symbols", e);
+		}
+	}
+
 	@Cacheable(value = "FTSODataProviderService.getProviderLockedVotePower")
-	private Double getProviderLockedVotePower(String address, BigInteger blockNumber) throws Exception {
+	public Double getProviderLockedVotePower(String address, BigInteger blockNumber) throws Exception {
 		return CommonUtil.convertTokenToMiminalToken(
 				this.contractService.getVpContract().votePowerOfAt(address, blockNumber).send());
 	}
 
 	@Cacheable(value = "FTSODataProviderService.getProviderCurrentVotePower")
-	private Double getProviderCurrentVotePower(String address, BigInteger blockNumber) throws Exception {
+	public Double getProviderCurrentVotePower(String address, BigInteger blockNumber) throws Exception {
 		return CommonUtil.convertTokenToMiminalToken(this.contractService.getVpContract()
 				.votePowerOfAt(address, blockNumber).send());
 	}
 
 	@Cacheable(value = "FTSODataProviderService.getProviderRewards")
-	private Double getProviderRewards(String address, BigInteger epochId) throws Exception {
+	public Double getProviderRewards(String address, BigInteger epochId) throws Exception {
 		return CommonUtil.convertTokenToMiminalToken(this.contractService.getFtsoRewardManager()
 				.getStateOfRewardsFromDataProviders(address, epochId, List.of(address))
 				.send()
@@ -209,14 +243,14 @@ public class FTSODataProviderService {
 	}
 
 	@Cacheable(value = "FTSODataProviderService.getTotalRewards")
-	private Double getTotalRewards(String address, BigInteger epochId) throws Exception {
+	public Double getTotalRewards(String address, BigInteger epochId) throws Exception {
 		return CommonUtil.convertTokenToMiminalToken(
 				this.contractService.getFtsoRewardManager().getUnclaimedReward(
 						epochId, address).send().component1());
 	}
 
 	@Cacheable(value = "FTSODataProviderService.getScheduledFeeChanges")
-	private List<FTSODataProviderScheduledFeeChangeDTO> getScheduledFeeChanges(String address) throws Exception {
+	public List<FTSODataProviderScheduledFeeChangeDTO> getScheduledFeeChanges(String address) throws Exception {
 		var rawFeeChanges = this.contractService.getFtsoRewardManager()
 				.getDataProviderScheduledFeePercentageChanges(address).send();
 		List<FTSODataProviderScheduledFeeChangeDTO> feeChanges = new ArrayList<>();
@@ -254,23 +288,25 @@ public class FTSODataProviderService {
 			ftsoDataProviderDTO.setFee(fee.floatValue() / 10000);
 
 			// TODO: Use VPContract batchVotePowerOfAt instead
-			var lockedVotePower = FTSODataProviderService.this.getProviderLockedVotePower(address,
+			var lockedVotePower = FTSODataProviderService.this.self.getProviderLockedVotePower(address,
 					this.rewardEpochDTO.getVotePowerLockBlockNumber());
 			ftsoDataProviderDTO.setLockedVotePower(lockedVotePower);
-			var currentVotePower = FTSODataProviderService.this.getProviderCurrentVotePower(address, latestBlockNumber);
+			var currentVotePower = FTSODataProviderService.this.self.getProviderCurrentVotePower(address,
+					latestBlockNumber);
 			ftsoDataProviderDTO.setCurrentVotePower(currentVotePower);
 
-			var providerRewards = FTSODataProviderService.this.getProviderRewards(address,
+			var providerRewards = FTSODataProviderService.this.self.getProviderRewards(address,
 					this.rewardEpochDTO.getEpochId());
 			ftsoDataProviderDTO.setProviderRewards(providerRewards);
 
-			var totalRewards = FTSODataProviderService.this.getTotalRewards(address, this.rewardEpochDTO.getEpochId());
+			var totalRewards = FTSODataProviderService.this.self.getTotalRewards(address,
+					this.rewardEpochDTO.getEpochId());
 			ftsoDataProviderDTO.setTotalRewards(totalRewards);
 
 			var rewardRate = totalRewards / lockedVotePower * (1 - ftsoDataProviderDTO.getFee());
 			ftsoDataProviderDTO.setRewardRate((float) rewardRate);
 
-			var feeChanges = FTSODataProviderService.this.getScheduledFeeChanges(address);
+			var feeChanges = FTSODataProviderService.this.self.getScheduledFeeChanges(address);
 			ftsoDataProviderDTO.setScheduledFeeChanges(feeChanges);
 
 			return ftsoDataProviderDTO;
