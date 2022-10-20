@@ -27,7 +27,7 @@ public class DelegationController {
     }
 
     @GetMapping()
-    ResponseEntity<PaginatedDTO<DelegationDTO>> getDataProviders(
+    ResponseEntity<PaginatedDTO<DelegationDTO>> getDelegations(
             @RequestParam(name = "from", required = false) Optional<String> fromAddress,
             @RequestParam(name = "to", required = false) Optional<String> toAddress,
             @RequestParam(name = "sort", defaultValue = "amount") String sortColumn,
