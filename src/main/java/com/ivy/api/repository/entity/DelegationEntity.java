@@ -22,7 +22,7 @@ import javax.persistence.Id;
 @NoArgsConstructor
 @Entity
 @Immutable
-@Subselect("SELECT * FROM delegation")
+@Subselect("SELECT * FROM delegation WHERE amount >= 1")
 public class DelegationEntity {
     @Id
     @Column(name = "delegation_id")
