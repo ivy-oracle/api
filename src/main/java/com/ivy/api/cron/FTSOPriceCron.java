@@ -3,9 +3,7 @@ package com.ivy.api.cron;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -30,7 +28,6 @@ import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.tx.Contract;
 
-import com.ivy.api.contract.Ftso;
 import com.ivy.api.repository.PriceFinalizedEventRepository;
 import com.ivy.api.repository.PriceRevealedEventRepository;
 import com.ivy.api.repository.entity.PriceFinalizedEventEntity;
@@ -51,6 +48,9 @@ public class FTSOPriceCron {
 
 	@Value("${web3.rpc.block-limit:30}")
 	private int rpcBlockLimit;
+
+	@Value("${web3.chain:songbird}")
+	private String chain;
 
 	private final Web3j web3j;
 	private final ContractService contractService;
@@ -162,7 +162,9 @@ public class FTSOPriceCron {
 
 		logger.debug(String.format(
 				"fetched %d finalized and %d revealed prices from block %s to %s",
-				priceFinalizedEventEntitiesToPersist.size(), 1, fromBlock.toString(), toBlock.toString()));
+				priceFinalizedEventEntitiesToPersist.size(),
+				priceRevealedEventEntitiesToPersist.size(),
+				fromBlock.toString(), toBlock.toString()));
 	}
 
 	public class PriceFinalizedFetchCallable implements Callable<List<PriceFinalizedEventEntity>> {
@@ -193,13 +195,17 @@ public class FTSOPriceCron {
 					DefaultBlockParameter.valueOf(fromBlock),
 					DefaultBlockParameter.valueOf(toBlock),
 					ftso.getContractAddress());
-			priceFinalizedFilter.addSingleTopic(EventEncoder.encode(Ftso.PRICEFINALIZED_EVENT));
+
+			var priceFinalizedEvent = chain == "songbird" ? com.ivy.api.contract.songbird.Ftso.PRICEFINALIZED_EVENT
+					: com.ivy.api.contract.flare.Ftso.PRICEFINALIZED_EVENT;
+
+			priceFinalizedFilter.addSingleTopic(EventEncoder.encode(priceFinalizedEvent));
 			var priceFinalizedLogs = web3j.ethGetLogs(priceFinalizedFilter).send().getLogs();
 			if (priceFinalizedLogs != null) {
 				for (int logIndex = 0; logIndex < priceFinalizedLogs.size(); logIndex++) {
 					Log log = (Log) priceFinalizedLogs.get(logIndex).get();
 					EventValues eventValues = Contract.staticExtractEventParameters(
-							Ftso.PRICEFINALIZED_EVENT, log);
+							priceFinalizedEvent, log);
 					PriceFinalizedEventEntity price = new PriceFinalizedEventEntity();
 
 					price.setSymbol(symbol);
@@ -249,25 +255,37 @@ public class FTSOPriceCron {
 					DefaultBlockParameter.valueOf(fromBlock),
 					DefaultBlockParameter.valueOf(toBlock),
 					ftso.getContractAddress());
-			priceRevealedFilter.addSingleTopic(EventEncoder.encode(Ftso.PRICEREVEALED_EVENT));
+
+			var priceRevealedEvent = chain == "songbird" ? com.ivy.api.contract.songbird.Ftso.PRICEREVEALED_EVENT
+					: com.ivy.api.contract.flare.Ftso.PRICEREVEALED_EVENT;
+			priceRevealedFilter.addSingleTopic(EventEncoder.encode(priceRevealedEvent));
 			var priceRevealedLogs = web3j.ethGetLogs(priceRevealedFilter).send().getLogs();
 
 			if (priceRevealedLogs != null) {
 				for (int logIndex = 0; logIndex < priceRevealedLogs.size(); logIndex++) {
 					Log log = (Log) priceRevealedLogs.get(logIndex).get();
 					EventValues eventValues = Contract.staticExtractEventParameters(
-							Ftso.PRICEREVEALED_EVENT, log);
+							priceRevealedEvent, log);
 					PriceRevealedEventEntity price = new PriceRevealedEventEntity();
 
 					price.setSymbol(symbol);
 					price.setVoter(Keys.toChecksumAddress((String) eventValues.getIndexedValues().get(0).getValue()));
 					price.setEpochId((BigInteger) eventValues.getIndexedValues().get(1).getValue());
 					price.setPrice((BigInteger) eventValues.getNonIndexedValues().get(0).getValue());
-					price.setRandom((BigInteger) eventValues.getNonIndexedValues().get(1).getValue());
-					price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(2).getValue());
-					price.setVotePowerNat((BigInteger) eventValues.getNonIndexedValues().get(3).getValue());
-					price.setVotePowerAsset(
-							(BigInteger) eventValues.getNonIndexedValues().get(4).getValue());
+					if (chain == "songbird") {
+						price.setRandom((BigInteger) eventValues.getNonIndexedValues().get(1).getValue());
+						price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(2).getValue());
+						price.setVotePowerNat((BigInteger) eventValues.getNonIndexedValues().get(3).getValue());
+						price.setVotePowerAsset(
+								(BigInteger) eventValues.getNonIndexedValues().get(4).getValue());
+					} else {
+						// flare
+						price.setRandom(BigInteger.ZERO);
+						price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(1).getValue());
+						price.setVotePowerNat((BigInteger) eventValues.getNonIndexedValues().get(2).getValue());
+						price.setVotePowerAsset(
+								(BigInteger) eventValues.getNonIndexedValues().get(3).getValue());
+					}
 
 					prices.add(price);
 				}

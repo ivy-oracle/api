@@ -25,7 +25,7 @@ This page is a work in progress
 ## Generate contract class from ABI
 
 ```sh
-web3j generate solidity -o ./src/main/java -p com.ivy.api.contract -a abi/PriceSubmitter.abi
+web3j generate solidity -o ./src/main/java -p com.ivy.api.contract.flare -a abi/flare/PriceSubmitter.abi
 ```
 
 ## Logging

@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,6 +30,9 @@ import lombok.Getter;
 @Service
 public class ContractService {
 	private final Web3j web3j;
+
+	@Value("${web3.chain:songbird}")
+	private String chain;
 
 	@Getter
 	final PriceSubmitter priceSubmitter;
@@ -75,10 +79,14 @@ public class ContractService {
 			if (!(ftsoAddress instanceof String)) {
 				throw new Exception("ftso address should be string, but its not");
 			}
-			var ftsoContract = Ftso.load(
+			Ftso ftsoContract = chain == "songbird" ? com.ivy.api.contract.songbird.Ftso.load(
 					(String) ftsoAddress,
 					this.web3j,
-					dummyCredentials, new DefaultGasProvider());
+					dummyCredentials, new DefaultGasProvider())
+					: com.ivy.api.contract.flare.Ftso.load(
+							(String) ftsoAddress,
+							this.web3j,
+							dummyCredentials, new DefaultGasProvider());
 			this.ftsos.put(ftsoContract.symbol().send(), ftsoContract);
 		}
 
