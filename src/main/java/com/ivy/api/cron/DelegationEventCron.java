@@ -39,6 +39,9 @@ public class DelegationEventCron {
 	@Value("${web3.rpc.block-limit:30}")
 	private int rpcBlockLimit;
 
+	@Value("${web3.chain:songbird}")
+	private String chain;
+
 	private final Web3j web3j;
 	private final ContractService contractService;
 	private final DelegationEventRepository delegationEventRepository;
@@ -54,6 +57,19 @@ public class DelegationEventCron {
 		this.delegationRepository = delegationRepository;
 	}
 
+	private int getStartingBlock() {
+		switch (this.chain) {
+			case "coston":
+				return 43369;
+			case "songbird":
+				return 458;
+			case "flare":
+				return 40;
+			default:
+				return 0;
+		}
+	}
+
 	@Scheduled(fixedDelay = 60 * 60 * 1000)
 	public void fetchDelegateEvents() throws IOException {
 		if (!isEnabled) {
@@ -64,9 +80,7 @@ public class DelegationEventCron {
 
 		BigInteger fetchBlockSize = BigInteger.valueOf(rpcBlockLimit);
 
-		// TODO: Set start block value by chain
-		// coston: 43369, songbird: 458, flare: 40
-		BigInteger startBlock = BigInteger.valueOf(458);
+		BigInteger startBlock = BigInteger.valueOf(this.getStartingBlock());
 		BigInteger lastFetchedBlockNumber = this.delegationEventRepository.getLastBlockNumber();
 		if (lastFetchedBlockNumber != null) {
 			startBlock = startBlock
