@@ -31,9 +31,6 @@ import lombok.Getter;
 public class ContractService {
 	private final Web3j web3j;
 
-	@Value("${web3.chain:songbird}")
-	private String chain;
-
 	@Getter
 	final PriceSubmitter priceSubmitter;
 
@@ -58,7 +55,7 @@ public class ContractService {
 	@Getter
 	private Map<String, Ftso> ftsos = new HashMap<>();
 
-	public ContractService(Web3j web3j) throws Exception {
+	public ContractService(Web3j web3j, @Value("${web3.chain:songbird}") String chain) throws Exception {
 		this.web3j = web3j;
 
 		Credentials dummyCredentials = Credentials.create(Keys.createEcKeyPair());
@@ -79,7 +76,7 @@ public class ContractService {
 			if (!(ftsoAddress instanceof String)) {
 				throw new Exception("ftso address should be string, but its not");
 			}
-			Ftso ftsoContract = chain == "songbird" ? com.ivy.api.contract.songbird.Ftso.load(
+			Ftso ftsoContract = chain.equals("songbird") ? com.ivy.api.contract.songbird.Ftso.load(
 					(String) ftsoAddress,
 					this.web3j,
 					dummyCredentials, new DefaultGasProvider())

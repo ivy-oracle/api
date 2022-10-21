@@ -196,7 +196,7 @@ public class FTSOPriceCron {
 					DefaultBlockParameter.valueOf(toBlock),
 					ftso.getContractAddress());
 
-			var priceFinalizedEvent = chain == "songbird" ? com.ivy.api.contract.songbird.Ftso.PRICEFINALIZED_EVENT
+			var priceFinalizedEvent = chain.equals("songbird") ? com.ivy.api.contract.songbird.Ftso.PRICEFINALIZED_EVENT
 					: com.ivy.api.contract.flare.Ftso.PRICEFINALIZED_EVENT;
 
 			priceFinalizedFilter.addSingleTopic(EventEncoder.encode(priceFinalizedEvent));
@@ -256,7 +256,7 @@ public class FTSOPriceCron {
 					DefaultBlockParameter.valueOf(toBlock),
 					ftso.getContractAddress());
 
-			var priceRevealedEvent = chain == "songbird" ? com.ivy.api.contract.songbird.Ftso.PRICEREVEALED_EVENT
+			var priceRevealedEvent = chain.equals("songbird") ? com.ivy.api.contract.songbird.Ftso.PRICEREVEALED_EVENT
 					: com.ivy.api.contract.flare.Ftso.PRICEREVEALED_EVENT;
 			priceRevealedFilter.addSingleTopic(EventEncoder.encode(priceRevealedEvent));
 			var priceRevealedLogs = web3j.ethGetLogs(priceRevealedFilter).send().getLogs();
@@ -272,7 +272,7 @@ public class FTSOPriceCron {
 					price.setVoter(Keys.toChecksumAddress((String) eventValues.getIndexedValues().get(0).getValue()));
 					price.setEpochId((BigInteger) eventValues.getIndexedValues().get(1).getValue());
 					price.setPrice((BigInteger) eventValues.getNonIndexedValues().get(0).getValue());
-					if (chain == "songbird") {
+					if (chain.equals("songbird")) {
 						price.setRandom((BigInteger) eventValues.getNonIndexedValues().get(1).getValue());
 						price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(2).getValue());
 						price.setVotePowerNat((BigInteger) eventValues.getNonIndexedValues().get(3).getValue());
