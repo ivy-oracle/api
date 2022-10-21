@@ -9,7 +9,16 @@ public class AppConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000", "https://ivyoracle.xyz", "https://develop.ivyoracle.xyz")
+                .allowedOrigins("http://localhost:3000",
+                        // Legacy
+                        "https://ivyoracle.xyz",
+                        "https://develop.ivyoracle.xyz",
+                        // Flare
+                        "https://flare.ivyoracle.xyz",
+                        "https://flare-dev.ivyoracle.xyz",
+                        // Songbird
+                        "https://songbird.ivyoracle.xyz",
+                        "https://songbird-dev.ivyoracle.xyz")
                 .allowedMethods("*");
     }
 }
