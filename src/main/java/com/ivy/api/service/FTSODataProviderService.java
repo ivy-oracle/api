@@ -236,10 +236,14 @@ public class FTSODataProviderService {
 
 	@Cacheable(value = "FTSODataProviderService.getProviderRewards")
 	public Double getProviderRewards(String address, BigInteger epochId) throws Exception {
-		return CommonUtil.convertTokenToMiminalToken(this.contractService.getFtsoRewardManager()
+		var stateOfRewards = this.contractService.getFtsoRewardManager()
 				.getStateOfRewardsFromDataProviders(address, epochId, List.of(address))
 				.send()
-				.component1().get(0));
+				.component1();
+		if (stateOfRewards.size() == 0) {
+			return 0d;
+		}
+		return CommonUtil.convertTokenToMiminalToken(stateOfRewards.get(0));
 	}
 
 	@Cacheable(value = "FTSODataProviderService.getTotalRewards")
