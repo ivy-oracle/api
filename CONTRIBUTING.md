@@ -42,8 +42,14 @@ logging.level.com.ivy.api.config.SchedulerConfiguration=DEBUG
 
 ### Baseline
 
-```
+```sh
 ./mvnw flyway:baseline -Dflyway.url=jdbc:postgresql://localhost:5432/ivy-api -Dflyway.user=postgres -Dflyway.password=postgres
+```
+
+### Migrate
+
+```sh
+./mvnw flyway:migrate -Dflyway.url=jdbc:postgresql://localhost:5432/ivy-api -Dflyway.user=postgres -Dflyway.password=postgres
 ```
 
 ## Deployment
