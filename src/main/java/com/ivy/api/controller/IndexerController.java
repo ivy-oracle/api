@@ -11,21 +11,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ivy.api.repository.entity.EthBlockEntity;
-import com.ivy.api.service.IndicerService;
+import com.ivy.api.service.IndexerService;
 
 @Controller
-@RequestMapping("indicer")
-public class IndicerController {
-    IndicerService indicerService;
+@RequestMapping("indexer")
+public class IndexerController {
+    IndexerService indexerService;
 
-    public IndicerController(IndicerService indicerService) {
-        this.indicerService = indicerService;
+    public IndexerController(IndexerService indexerService) {
+        this.indexerService = indexerService;
     }
 
     @PutMapping("block/{blockNumber}")
     public ResponseEntity<EthBlockEntity> indexBlock(@PathVariable("blockNumber") Long blockNumber) {
         try {
-            EthBlockEntity block = this.indicerService.indexBlock(blockNumber);
+            EthBlockEntity block = this.indexerService.indexBlock(blockNumber);
             return ResponseEntity.ok(block);
         } catch (IOException e) {
             throw new ResponseStatusException(

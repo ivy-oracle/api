@@ -26,14 +26,14 @@ import com.ivy.api.repository.entity.EthTransactionEntity;
 import com.ivy.api.util.CommonUtil;
 
 @Service
-public class IndicerService {
+public class IndexerService {
     ExecutorService executor = Executors.newFixedThreadPool(100);
 
     private final Web3j web3j;
     private final EthBlockRepository ethBlockRepository;
     private final EthTransactionRepository ethTransactionRepository;
 
-    public IndicerService(Web3j web3j, EthBlockRepository ethBlockRepository,
+    public IndexerService(Web3j web3j, EthBlockRepository ethBlockRepository,
             EthTransactionRepository ethTransactionRepository) {
         this.web3j = web3j;
         this.ethBlockRepository = ethBlockRepository;
