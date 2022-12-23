@@ -40,11 +40,32 @@ public class IndexerService {
         this.ethTransactionRepository = ethTransactionRepository;
     }
 
-    public EthBlockEntity indexBlock(Long blockNumber) throws IOException {
+    public EthBlockEntity getBlock(BigInteger blockNumber) {
+        return this.ethBlockRepository.getByBlockNumber(blockNumber);
+    }
+
+    public List<EthBlockEntity> getBlocks(BigInteger from, BigInteger to) {
+        return this.ethBlockRepository.getByFromBlockNumberAndToBlockNumber(from, to);
+    }
+
+    public List<EthBlockEntity> indexBlocks(BigInteger from, BigInteger to) throws IOException {
+        var unIndexedBlockNumbers = this.ethBlockRepository.getUnIndexedBlockNumbers(from, to);
+
+        List<EthBlockEntity> blocks = new ArrayList<>();
+        for (int i = 0; i < unIndexedBlockNumbers.size(); i++) {
+            var blockNumber = unIndexedBlockNumbers.get(i);
+            var block = this.indexBlock(blockNumber);
+            blocks.add(block);
+        }
+
+        return blocks;
+    }
+
+    public EthBlockEntity indexBlock(BigInteger blockNumber) throws IOException {
         // TODO: Check if block is in database already.
 
         var ethBlock = web3j.ethGetBlockByNumber(
-                DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber)),
+                DefaultBlockParameter.valueOf(blockNumber),
                 false).send();
 
         var ethBlockResult = ethBlock.getResult();
@@ -61,7 +82,7 @@ public class IndexerService {
             EthTransactionEntity transactionEntity = new EthTransactionEntity(
                     transactionResult.getHash(),
                     transactionResult.getFrom(),
-                    transactionResult.getTo(),
+                    transactionResult.getTo() != null ? transactionResult.getTo() : "",
                     transactionResult.getValue(),
                     transactionResult.getGas(),
                     transactionResult.getGasPrice(),
