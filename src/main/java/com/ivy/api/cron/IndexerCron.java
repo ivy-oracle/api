@@ -31,7 +31,31 @@ public class IndexerCron {
         this.web3j = web3j;
     }
 
-    @Scheduled(fixedDelay = 60 * 1000)
+    @Scheduled(fixedDelay = 5 * 1000)
+    public void indexLatestBlocks() {
+        BigInteger latestBlockNumber;
+        try {
+            latestBlockNumber = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
+                    .send().getBlock().getNumber();
+        } catch (IOException e) {
+            log.error("failed to fetch latest block number", e);
+            return;
+        }
+
+        try {
+            var indexedBlocks = this.indexerService
+                    .indexBlocks(latestBlockNumber.subtract(BigInteger.valueOf(rpcBlockLimit)), latestBlockNumber);
+            if (indexedBlocks.size() > 0) {
+                log.info(String.format("Indexed %d blocks from %d to %d", indexedBlocks.size(),
+                        indexedBlocks.get(0).getBlockNumber(),
+                        indexedBlocks.get(indexedBlocks.size() - 1).getBlockNumber()));
+            }
+        } catch (IOException e) {
+            IndexerCron.log.error("Failed to index blocks", e);
+        }
+    }
+
+    // @Scheduled(fixedDelay = 60 * 1000)
     public void indexBlockchain() {
         IndexerCron.log.debug("Indexing blockchain");
         BigInteger fetchBlockSize = BigInteger.valueOf(rpcBlockLimit);
