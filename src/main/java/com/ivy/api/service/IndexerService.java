@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.response.EthBlock;
@@ -25,6 +26,9 @@ import com.ivy.api.repository.entity.EthBlockEntity;
 import com.ivy.api.repository.entity.EthTransactionEntity;
 import com.ivy.api.util.CommonUtil;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 public class IndexerService {
     ExecutorService executor = Executors.newFixedThreadPool(100);
@@ -81,8 +85,8 @@ public class IndexerService {
             var transactionResult = transaction.getResult();
             EthTransactionEntity transactionEntity = new EthTransactionEntity(
                     transactionResult.getHash(),
-                    transactionResult.getFrom(),
-                    transactionResult.getTo() != null ? transactionResult.getTo() : "",
+                    Keys.toChecksumAddress(transactionResult.getFrom()),
+                    transactionResult.getTo() != null ? Keys.toChecksumAddress(transactionResult.getTo()) : "",
                     transactionResult.getValue(),
                     transactionResult.getGas(),
                     transactionResult.getGasPrice(),
