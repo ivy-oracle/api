@@ -4,21 +4,14 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
-import org.web3j.protocol.core.methods.response.EthBlock;
-import org.web3j.protocol.core.methods.response.EthTransaction;
+import org.web3j.protocol.core.methods.response.Transaction;
 
 import com.ivy.api.repository.EthBlockRepository;
 import com.ivy.api.repository.EthTransactionRepository;
@@ -26,9 +19,6 @@ import com.ivy.api.repository.entity.EthBlockEntity;
 import com.ivy.api.repository.entity.EthTransactionEntity;
 import com.ivy.api.util.CommonUtil;
 
-import lombok.extern.log4j.Log4j2;
-
-@Log4j2
 @Service
 public class IndexerService {
     ExecutorService executor = Executors.newFixedThreadPool(100);
@@ -70,7 +60,7 @@ public class IndexerService {
 
         var ethBlock = web3j.ethGetBlockByNumber(
                 DefaultBlockParameter.valueOf(blockNumber),
-                false).send();
+                true).send();
 
         var ethBlockResult = ethBlock.getResult();
         EthBlockEntity ethBlockEntity = new EthBlockEntity(
@@ -79,14 +69,14 @@ public class IndexerService {
                 CommonUtil.convertTimestampToDate(ethBlockResult.getTimestamp()));
         this.ethBlockRepository.save(ethBlockEntity);
 
-        List<EthTransaction> transactions = this.fetchTransactionsFromBlock(ethBlock);
+        List<Transaction> transactions = ethBlockResult.getTransactions().stream()
+                .map(transaction -> (Transaction) transaction.get()).collect(Collectors.toList());
         List<EthTransactionEntity> transactionEntities = new ArrayList<>();
-        transactions.stream().forEach(transaction -> {
-            var transactionResult = transaction.getResult();
+        transactions.stream().forEach(transactionResult -> {
             EthTransactionEntity transactionEntity = new EthTransactionEntity(
                     transactionResult.getHash(),
-                    Keys.toChecksumAddress(transactionResult.getFrom()),
-                    transactionResult.getTo() != null ? Keys.toChecksumAddress(transactionResult.getTo()) : "",
+                    transactionResult.getFrom(),
+                    transactionResult.getTo() != null ? transactionResult.getTo() : "",
                     transactionResult.getValue(),
                     transactionResult.getGas(),
                     transactionResult.getGasPrice(),
@@ -98,50 +88,5 @@ public class IndexerService {
         this.ethTransactionRepository.saveAll(transactionEntities);
 
         return ethBlockEntity;
-    }
-
-    private List<EthTransaction> fetchTransactionsFromBlock(EthBlock ethBlock) {
-        var transactions = ethBlock.getResult().getTransactions();
-        List<String> transactionHashes = transactions.stream().map(transactionHash -> (String) transactionHash.get())
-                .collect(Collectors.toList());
-
-        List<Future<EthTransaction>> tasks = new ArrayList<>();
-        transactionHashes.forEach(hash -> {
-            try {
-                var task = this.executor.submit(new TransactionResolver(hash));
-                tasks.add(task);
-            } catch (Exception e) {
-                throw new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get transactions", e);
-            }
-        });
-
-        List<EthTransaction> results = new ArrayList<>();
-        for (var task : tasks) {
-            try {
-                results.add(task.get());
-            } catch (ExecutionException e) {
-                throw new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get transactions", e);
-            } catch (InterruptedException e) {
-                throw new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get transactions", e);
-            }
-        }
-
-        return results;
-    }
-
-    private class TransactionResolver implements Callable<EthTransaction> {
-        private String hash;
-
-        public TransactionResolver(String hash) {
-            this.hash = hash;
-        }
-
-        @Override
-        public EthTransaction call() throws Exception {
-            return web3j.ethGetTransactionByHash(this.hash).send();
-        }
     }
 }
