@@ -53,6 +53,10 @@ public class IndexerService {
         return this.ethBlockRepository.getByFromBlockNumberAndToBlockNumber(from, to);
     }
 
+    public EthTransactionEntity getTransaction(String hash) {
+        return this.ethTransactionRepository.getByTransactionHash(hash);
+    }
+
     public List<EthBlockEntity> indexBlocks(BigInteger from, BigInteger to) throws IOException {
         var unIndexedBlockNumbers = this.ethBlockRepository.getUnIndexedBlockNumbers(from, to);
 

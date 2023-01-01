@@ -59,4 +59,10 @@ public class IndexerController {
                     HttpStatus.INTERNAL_SERVER_ERROR, String.format("failed to index block %d", blockNumber), e);
         }
     }
+
+    @GetMapping("transaction/{transactionHash}")
+    public ResponseEntity<EthTransactionEntity> getTransaction(
+            @PathVariable("transactionHash") String transactionHash) {
+        return ResponseEntity.ok(this.indexerService.getTransaction(transactionHash));
+    }
 }

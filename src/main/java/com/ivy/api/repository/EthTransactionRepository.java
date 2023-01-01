@@ -15,9 +15,18 @@ import com.ivy.api.repository.entity.EthTransactionEntity;
 @Repository
 @Transactional
 public interface EthTransactionRepository extends JpaRepository<EthTransactionEntity, BigInteger> {
-    @Query(value = "SELECT (et).* FROM eth_transaction et JOIN eth_block eb ON eb.block_number = et.block_number WHERE et.from_address = :fromAddress AND eb.block_timestamp >= :startTimestamp AND et.to_address NOT IN :excludeAddresses", nativeQuery = true)
-    public List<EthTransactionEntity> getByFromAddressAndStartTimestamp(
-            @Param("fromAddress") String fromAddress,
-            @Param("startTimestamp") Date startTimestamp,
-            @Param("excludeAddresses") List<String> excludeAddresses);
+
+	public EthTransactionEntity getByTransactionHash(String hash);
+
+	@Query(value = "SELECT (et).*, ea.is_contract is_contract_interaction FROM eth_transaction et " +
+			"JOIN eth_block eb ON eb.block_number = et.block_number " +
+			"JOIN eth_address ea ON ea.eth_address = et.to_address " +
+			"WHERE et.from_address = :fromAddress AND " +
+			"eb.block_timestamp >= :startTimestamp AND " +
+			"et.value > 0 AND " +
+			"et.to_address NOT IN :excludeAddresses", nativeQuery = true)
+	public List<EthTransactionEntity> getByFromAddressAndStartTimestamp(
+			@Param("fromAddress") String fromAddress,
+			@Param("startTimestamp") Date startTimestamp,
+			@Param("excludeAddresses") List<String> excludeAddresses);
 }
