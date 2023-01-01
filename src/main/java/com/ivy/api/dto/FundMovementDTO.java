@@ -23,4 +23,7 @@ public class FundMovementDTO {
 
     @NotNull
     private BigInteger amount;
+
+    @NotNull
+    private Boolean isContractInteraction;
 }
