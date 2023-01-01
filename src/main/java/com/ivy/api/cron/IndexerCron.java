@@ -43,13 +43,8 @@ public class IndexerCron {
         }
 
         try {
-            var indexedBlocks = this.indexerService
+            this.indexerService
                     .indexBlocks(latestBlockNumber.subtract(BigInteger.valueOf(rpcBlockLimit)), latestBlockNumber);
-            if (indexedBlocks.size() > 0) {
-                log.info(String.format("Indexed %d blocks from %d to %d", indexedBlocks.size(),
-                        indexedBlocks.get(0).getBlockNumber(),
-                        indexedBlocks.get(indexedBlocks.size() - 1).getBlockNumber()));
-            }
         } catch (IOException e) {
             IndexerCron.log.error("Failed to index blocks", e);
         }

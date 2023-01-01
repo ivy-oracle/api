@@ -25,6 +25,9 @@ import com.ivy.api.repository.entity.EthBlockEntity;
 import com.ivy.api.repository.entity.EthTransactionEntity;
 import com.ivy.api.util.CommonUtil;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 public class IndexerService {
     ExecutorService executor = Executors.newFixedThreadPool(100);
@@ -55,9 +58,20 @@ public class IndexerService {
 
         List<EthBlockEntity> blocks = new ArrayList<>();
         for (int i = 0; i < unIndexedBlockNumbers.size(); i++) {
+            if (i % 100 == 0 && i > 0) {
+                log.info(String.format("Indexed %d/%d blocks from %s to %s", blocks.size(),
+                        unIndexedBlockNumbers.size(), from.toString(), to.toString()));
+            }
+
             var blockNumber = unIndexedBlockNumbers.get(i);
             var block = this.indexBlock(blockNumber);
             blocks.add(block);
+        }
+
+        if (blocks.size() > 0) {
+            log.info(String.format("Indexed %d blocks from %d to %d", blocks.size(),
+                    blocks.get(0).getBlockNumber(),
+                    blocks.get(blocks.size() - 1).getBlockNumber()));
         }
 
         return blocks;
