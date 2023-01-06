@@ -28,8 +28,14 @@ public class FTSOService {
 
         RewardEpochDTO rewardEpochDTO;
         try {
-            var epochId = ftsoManager.getCurrentRewardEpoch().send();
-            var votePowerLockBlockNumber = ftsoManager.getRewardEpochVotePowerBlock(epochId).send();
+            var epochIdFuture = ftsoManager.getCurrentRewardEpoch().sendAsync();
+            var rewardEpochDurationSecondsFuture = ftsoManager.rewardEpochDurationSeconds().sendAsync();
+            var rewardEpochsStartTsFuture = ftsoManager.rewardEpochsStartTs().sendAsync();
+
+            var epochId = epochIdFuture.join();
+            var votePowerLockBlockNumberFuture = ftsoManager.getRewardEpochVotePowerBlock(epochId).sendAsync();
+
+            var votePowerLockBlockNumber = votePowerLockBlockNumberFuture.join();
             Block votePowerLockBlock = web3j
                     .ethGetBlockByNumber(DefaultBlockParameter.valueOf(votePowerLockBlockNumber), false)
                     .send().getBlock();
@@ -37,11 +43,22 @@ public class FTSOService {
             var votePowerLockBlockTimestamp = votePowerLockBlock.getTimestamp();
             Date votePowerLockBlockDate = CommonUtil.convertTimestampToDate(votePowerLockBlockTimestamp);
 
-            rewardEpochDTO = RewardEpochDTO.builder()
-                    .epochId(epochId)
-                    .votePowerLockBlockNumber(votePowerLockBlockNumber)
-                    .votePowerLockBlockDate(votePowerLockBlockDate)
-                    .build();
+            var rewardEpochDurationSeconds = rewardEpochDurationSecondsFuture.join();
+            var rewardEpochsStartTs = rewardEpochsStartTsFuture.join();
+
+            var currentRewardEpochStartTimestamp = rewardEpochsStartTs
+                    .add(rewardEpochDurationSeconds.multiply(epochId));
+            var currentRewardEpochStartDate = CommonUtil.convertTimestampToDate(currentRewardEpochStartTimestamp);
+
+            var currentRewardEpochEndTimestamp = currentRewardEpochStartTimestamp.add(rewardEpochDurationSeconds);
+            var currentRewardEpochEndDate = CommonUtil.convertTimestampToDate(currentRewardEpochEndTimestamp);
+
+            rewardEpochDTO = new RewardEpochDTO(
+                    epochId,
+                    votePowerLockBlockNumber,
+                    votePowerLockBlockDate,
+                    currentRewardEpochStartDate,
+                    currentRewardEpochEndDate);
         } catch (Exception e) {
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get reward epoch data", e);

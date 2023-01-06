@@ -21,4 +21,10 @@ public class RewardEpochDTO {
 
     @NotNull
     Date votePowerLockBlockDate;
+
+    @NotNull
+    Date start;
+
+    @NotNull
+    Date end;
 }
