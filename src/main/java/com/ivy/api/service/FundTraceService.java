@@ -26,8 +26,9 @@ public class FundTraceService {
         this.ethAddressRepository = ethAddressRepository;
     }
 
-    public List<FundMovementDTO> getFundMovements(String fromAddress, Date fromDate) {
+    public List<FundMovementDTO> getFundMovements(String fromAddress, Date fromDate, Date toDate) {
         var transactions = this.ethTransactionRepository.getByFromAddressAndStartTimestamp(fromAddress, fromDate,
+                toDate,
                 List.of("0x1000000000000000000000000000000000000001",
                         "0x1000000000000000000000000000000000000002",
                         "0x1000000000000000000000000000000000000003"));

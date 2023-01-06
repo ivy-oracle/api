@@ -23,10 +23,12 @@ public interface EthTransactionRepository extends JpaRepository<EthTransactionEn
 			"JOIN eth_address ea ON ea.eth_address = et.to_address " +
 			"WHERE et.from_address = :fromAddress AND " +
 			"eb.block_timestamp >= :startTimestamp AND " +
+			"eb.block_timestamp <= :endTimestamp AND " +
 			"et.value > 0 AND " +
 			"et.to_address NOT IN :excludeAddresses", nativeQuery = true)
 	public List<EthTransactionEntity> getByFromAddressAndStartTimestamp(
 			@Param("fromAddress") String fromAddress,
 			@Param("startTimestamp") Date startTimestamp,
+			@Param("endTimestamp") Date endTimestamp,
 			@Param("excludeAddresses") List<String> excludeAddresses);
 }

@@ -27,7 +27,8 @@ public class FundTraceController {
     @GetMapping()
     public ResponseEntity<List<FundMovementDTO>> getFundMovements(
             @RequestParam("fromAddress") String fromAddress,
-            @RequestParam("fromDate") @DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss") Date fromDate) {
-        return ResponseEntity.ok(this.fundTraceService.getFundMovements(fromAddress.toLowerCase(), fromDate));
+            @RequestParam("fromDate") @DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss") Date fromDate,
+            @RequestParam("toDate") @DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss") Date toDate) {
+        return ResponseEntity.ok(this.fundTraceService.getFundMovements(fromAddress.toLowerCase(), fromDate, toDate));
     }
 }
