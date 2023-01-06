@@ -25,6 +25,12 @@ public class FTSODataProviderDTO {
     Double currentVotePower;
 
     @NotNull
+    Double lockedVotePowerPercentage;
+
+    @NotNull
+    Double currentVotePowerPercentage;
+
+    @NotNull
     Double totalRewards;
 
     @NotNull

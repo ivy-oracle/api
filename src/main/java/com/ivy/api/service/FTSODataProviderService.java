@@ -1,5 +1,6 @@
 package com.ivy.api.service;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,6 +68,8 @@ public class FTSODataProviderService {
 
 	@Cacheable(value = "FTSODataProviderService.getAllFTSODataProviders")
 	public List<FTSODataProviderDTO> getAllFTSODataProviders() {
+		var totalVotePowerFuture = this.contractService.wNat.totalVotePower().sendAsync();
+
 		var votersAddressMap = self.fetchAllWhitelistedVoters();
 
 		RewardEpochDTO rewardEpochDTO = this.ftsoService.getRewardEpoch();
@@ -108,10 +111,15 @@ public class FTSODataProviderService {
 			tasks.add(task);
 		});
 
+		var totalVotePower = CommonUtil.convertTokenToMiminalToken(totalVotePowerFuture.join());
+
 		List<FTSODataProviderDTO> results = new ArrayList<>();
 		for (var task : tasks) {
 			try {
-				results.add(task.get());
+				var result = task.get();
+				result.setCurrentVotePowerPercentage(result.getCurrentVotePower() / totalVotePower);
+				result.setLockedVotePowerPercentage(result.getLockedVotePower() / totalVotePower);
+				results.add(result);
 			} catch (ExecutionException e) {
 				throw new ResponseStatusException(
 						HttpStatus.INTERNAL_SERVER_ERROR, "failed to resolve FTSO data providers", e);
@@ -126,6 +134,8 @@ public class FTSODataProviderService {
 
 	@Cacheable(value = "FTSODataProviderService.getFTSODataProvider")
 	public FTSODataProviderDTO getFTSODataProvider(String address) {
+		var totalVotePowerFuture = this.contractService.wNat.totalVotePower().sendAsync();
+
 		var checkedSumAddress = Keys.toChecksumAddress(address);
 		var votersAddressMap = self.fetchAllWhitelistedVoters();
 
@@ -163,6 +173,11 @@ public class FTSODataProviderService {
 			throw new ResponseStatusException(
 					HttpStatus.INTERNAL_SERVER_ERROR, "failed to resolve FTSO data provider", e);
 		}
+
+		var totalVotePower = CommonUtil.convertTokenToMiminalToken(totalVotePowerFuture.join());
+
+		ftsoDataProviderDTO.setCurrentVotePowerPercentage(ftsoDataProviderDTO.getCurrentVotePower() / totalVotePower);
+		ftsoDataProviderDTO.setLockedVotePowerPercentage(ftsoDataProviderDTO.getLockedVotePower() / totalVotePower);
 		return ftsoDataProviderDTO;
 	}
 
