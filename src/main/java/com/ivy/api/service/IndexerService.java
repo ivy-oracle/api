@@ -3,6 +3,7 @@ package com.ivy.api.service;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,8 +58,12 @@ public class IndexerService {
         return this.ethTransactionRepository.getByTransactionHash(hash);
     }
 
-    public List<EthBlockEntity> indexBlocks(BigInteger from, BigInteger to) throws IOException {
+    public List<EthBlockEntity> indexBlocks(BigInteger from, BigInteger to, Boolean reverse) throws IOException {
         var unIndexedBlockNumbers = this.ethBlockRepository.getUnIndexedBlockNumbers(from, to);
+
+        if (reverse) {
+            Collections.reverse(unIndexedBlockNumbers);
+        }
 
         List<EthBlockEntity> blocks = new ArrayList<>();
         for (int i = 0; i < unIndexedBlockNumbers.size(); i++) {

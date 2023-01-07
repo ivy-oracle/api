@@ -48,7 +48,7 @@ public class IndexerTaskService {
 
         @Override
         public Boolean call() throws Exception {
-            indexerService.indexBlocks(fromBlock, toBlock);
+            indexerService.indexBlocks(fromBlock, toBlock, true);
             return true;
         }
 
