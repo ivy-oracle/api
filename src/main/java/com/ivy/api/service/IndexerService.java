@@ -77,7 +77,7 @@ public class IndexerService {
                     true).sendAsync();
             ethBlockFutures.add(ethBlockFuture);
 
-            if (ethBlockFutures.size() >= 100) {
+            if (ethBlockFutures.size() >= 50) {
                 while (!ethBlockFutures.isEmpty()) {
                     var ethBlock = ethBlockFutures.remove().join();
                     var block = this.processBlock(ethBlock);
@@ -151,6 +151,10 @@ public class IndexerService {
         for (int i = 0; i < addressArray.size(); i++) {
             String address = addressArray.get(i);
             var code = codeFutures.get(i).join();
+            if (code.getResult() == null) {
+                log.warn("Get address code returned NULL for {}", address);
+                continue;
+            }
             Boolean isContract = !code.getResult().equals("0x");
             addressEntities.add(new EthAddressEntity(address, isContract));
         }
