@@ -2,11 +2,14 @@ package com.ivy.api.service;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthGetCode;
 import org.web3j.protocol.core.methods.response.Transaction;
 
@@ -24,7 +28,6 @@ import com.ivy.api.repository.EthTransactionRepository;
 import com.ivy.api.repository.entity.EthAddressEntity;
 import com.ivy.api.repository.entity.EthBlockEntity;
 import com.ivy.api.repository.entity.EthTransactionEntity;
-import com.ivy.api.util.CommonUtil;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -66,19 +69,33 @@ public class IndexerService {
         }
 
         List<EthBlockEntity> blocks = new ArrayList<>();
+        Queue<CompletableFuture<EthBlock>> ethBlockFutures = new ArrayDeque<>();
         for (int i = 0; i < unIndexedBlockNumbers.size(); i++) {
-            if (i % 100 == 0 && i > 0) {
-                log.info(String.format("Indexed %d/%d blocks from %s to %s", blocks.size(),
+            var blockNumber = unIndexedBlockNumbers.get(i);
+            var ethBlockFuture = web3j.ethGetBlockByNumber(
+                    DefaultBlockParameter.valueOf(blockNumber),
+                    true).sendAsync();
+            ethBlockFutures.add(ethBlockFuture);
+
+            if (ethBlockFutures.size() >= 100) {
+                while (!ethBlockFutures.isEmpty()) {
+                    var ethBlock = ethBlockFutures.remove().join();
+                    var block = this.processBlock(ethBlock);
+                    blocks.add(block);
+                }
+                log.debug(String.format("Indexed %d/%d blocks from %s to %s", blocks.size(),
                         unIndexedBlockNumbers.size(), from.toString(), to.toString()));
             }
+        }
 
-            var blockNumber = unIndexedBlockNumbers.get(i);
-            var block = this.indexBlock(blockNumber);
+        while (!ethBlockFutures.isEmpty()) {
+            var ethBlock = ethBlockFutures.remove().join();
+            var block = this.processBlock(ethBlock);
             blocks.add(block);
         }
 
         if (blocks.size() > 0) {
-            log.info(String.format("Indexed %d blocks from %d to %d", blocks.size(),
+            log.debug(String.format("Indexed %d blocks from %d to %d", blocks.size(),
                     blocks.get(0).getBlockNumber(),
                     blocks.get(blocks.size() - 1).getBlockNumber()));
         }
@@ -92,15 +109,15 @@ public class IndexerService {
         var ethBlock = web3j.ethGetBlockByNumber(
                 DefaultBlockParameter.valueOf(blockNumber),
                 true).send();
+        var ethBlockEntity = this.processBlock(ethBlock);
+        return ethBlockEntity;
+    }
 
-        var ethBlockResult = ethBlock.getResult();
-        EthBlockEntity ethBlockEntity = new EthBlockEntity(
-                ethBlockResult.getNumber(),
-                ethBlockResult.getHash(),
-                CommonUtil.convertTimestampToDate(ethBlockResult.getTimestamp()));
+    private EthBlockEntity processBlock(EthBlock ethBlock) {
+        EthBlockEntity ethBlockEntity = EthBlockEntity.of(ethBlock);
         this.ethBlockRepository.save(ethBlockEntity);
 
-        List<Transaction> transactions = ethBlockResult.getTransactions().stream()
+        List<Transaction> transactions = ethBlock.getResult().getTransactions().stream()
                 .map(transaction -> (Transaction) transaction.get()).collect(Collectors.toList());
         List<EthTransactionEntity> transactionEntities = new ArrayList<>();
         Set<String> addresses = new HashSet<>();
@@ -124,9 +141,16 @@ public class IndexerService {
 
         List<String> addressArray = new ArrayList<>(addresses);
         List<EthAddressEntity> addressEntities = new ArrayList<>();
+        List<CompletableFuture<EthGetCode>> codeFutures = new ArrayList<>();
         for (int i = 0; i < addressArray.size(); i++) {
             String address = addressArray.get(i);
-            EthGetCode code = this.web3j.ethGetCode(address, DefaultBlockParameterName.LATEST).send();
+            var codeFuture = this.web3j.ethGetCode(address, DefaultBlockParameterName.LATEST).sendAsync();
+            codeFutures.add(codeFuture);
+        }
+
+        for (int i = 0; i < addressArray.size(); i++) {
+            String address = addressArray.get(i);
+            var code = codeFutures.get(i).join();
             Boolean isContract = !code.getResult().equals("0x");
             addressEntities.add(new EthAddressEntity(address, isContract));
         }

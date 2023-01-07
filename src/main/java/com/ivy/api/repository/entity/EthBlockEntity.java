@@ -9,6 +9,10 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
+import org.web3j.protocol.core.methods.response.EthBlock;
+
+import com.ivy.api.util.CommonUtil;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,4 +37,12 @@ public class EthBlockEntity {
     @NotNull
     @Column(name = "block_timestamp")
     private Date timestamp;
+
+    public static EthBlockEntity of(EthBlock ethBlock) {
+        var ethBlockResult = ethBlock.getResult();
+        return new EthBlockEntity(
+                ethBlockResult.getNumber(),
+                ethBlockResult.getHash(),
+                CommonUtil.convertTimestampToDate(ethBlockResult.getTimestamp()));
+    }
 }
