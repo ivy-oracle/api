@@ -1,5 +1,6 @@
 package com.ivy.api.controller;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -11,8 +12,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.ivy.api.dto.DelegationDTO;
+import com.ivy.api.dto.DelegationStatDTO;
 import com.ivy.api.dto.PaginatedDTO;
 import com.ivy.api.service.DelegationService;
+import com.ivy.api.service.FTSODataProviderService;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,8 +25,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class DelegationController {
     private final DelegationService delegationService;
 
-    public DelegationController(DelegationService delegationService) {
+    private final FTSODataProviderService ftsoDataProviderService;
+
+    public DelegationController(DelegationService delegationService, FTSODataProviderService ftsoDataProviderService) {
         this.delegationService = delegationService;
+        this.ftsoDataProviderService = ftsoDataProviderService;
     }
 
     @GetMapping()
@@ -44,5 +50,12 @@ public class DelegationController {
                 delegations.getTotalElements(),
                 delegations.hasNext());
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("stats")
+    public ResponseEntity<List<DelegationStatDTO>> getDelegationStats() {
+        var allAddresses = this.ftsoDataProviderService.getAllFTSODataProviderAddresses();
+        var delegationStats = this.delegationService.getDelegationStats();
+        return ResponseEntity.ok(delegationStats.stream().filter(d -> allAddresses.contains(d.getAddress())).toList());
     }
 }
