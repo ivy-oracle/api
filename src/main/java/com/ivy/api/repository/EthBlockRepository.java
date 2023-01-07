@@ -23,4 +23,7 @@ public interface EthBlockRepository extends JpaRepository<EthBlockEntity, BigInt
             "left join eth_block eb on eb.block_number = series.i " +
             "where eb.block_number is NULL;", nativeQuery = true)
     List<BigInteger> getUnIndexedBlockNumbers(BigInteger from, BigInteger to);
+
+    @Query(value = "select block_number from eth_block where block_timestamp > (select block_timestamp - INTERVAL '1 DAY' from eth_block limit 1) limit 1", nativeQuery = true)
+    BigInteger get24HourBlockNumber();
 }

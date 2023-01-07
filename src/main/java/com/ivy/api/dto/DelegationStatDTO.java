@@ -25,7 +25,11 @@ public class DelegationStatDTO {
     @NotNull
     private Double standardDeviation;
 
+    @NotNull
+    private Double percentageChange24Hour;
+
     public static DelegationStatDTO of(DelegationStatProjection d) {
-        return new DelegationStatDTO(d.getAddress(), d.getCount(), d.getAverage(), d.getStandardDeviation());
+        return DelegationStatDTO.builder().address(d.getAddress()).count(d.getCount()).average(d.getAverage())
+                .standardDeviation(d.getStandardDeviation()).build();
     }
 }
