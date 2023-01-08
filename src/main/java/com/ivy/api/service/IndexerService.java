@@ -83,8 +83,13 @@ public class IndexerService {
                     var block = this.processBlock(ethBlock);
                     blocks.add(block);
                 }
-                log.debug(String.format("Indexed %d/%d blocks from %s to %s", blocks.size(),
-                        unIndexedBlockNumbers.size(), from.toString(), to.toString()));
+                Double total = to.subtract(from).doubleValue();
+                Double completed = total - unIndexedBlockNumbers.size() + blocks.size();
+                Double completion = completed / total * 100;
+                if (blocks.size() % 100 == 0) {
+                    log.debug(String.format("Indexed %d/%d (%f%%) blocks", completed.longValue(),
+                            total.longValue(), completion, from.toString(), to.toString()));
+                }
             }
         }
 

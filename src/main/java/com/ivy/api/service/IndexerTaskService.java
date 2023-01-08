@@ -6,12 +6,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.ivy.api.constant.TaskStatus;
 
 import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 @Service
 public class IndexerTaskService {
     ExecutorService executor = Executors.newFixedThreadPool(100);
@@ -48,9 +51,24 @@ public class IndexerTaskService {
 
         @Override
         public Boolean call() throws Exception {
-            indexerService.indexBlocks(fromBlock, toBlock, true);
+            log.info("Starting block indexing task for block {} to {}", fromBlock, toBlock);
+
+            var completed = false;
+            var retries = 0;
+            while (!completed && retries < 10) {
+                try {
+                    indexerService.indexBlocks(fromBlock, toBlock, true);
+                    completed = true;
+                } catch (Exception e) {
+                    if (e instanceof DataIntegrityViolationException) {
+                        log.warn("Data integrity violation encountered when indexing blocks.");
+                    } else {
+                        log.error("Error encountered when indexing blocks, retrying...", e);
+                        retries += 1;
+                    }
+                }
+            }
             return true;
         }
-
     }
 }
