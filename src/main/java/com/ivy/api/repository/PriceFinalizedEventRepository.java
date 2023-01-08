@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.ivy.api.repository.dto.FTSODataProviderAccuracyDTO;
+import com.ivy.api.dto.projection.FTSODataProviderAccuracyProjection;
 import com.ivy.api.repository.entity.PriceFinalizedEventEntity;
 
 @Repository
@@ -33,7 +33,7 @@ public interface PriceFinalizedEventRepository extends JpaRepository<PriceFinali
 			"from price_revealed_event epr join price_finalized_event epf " +
 			"on epf.epoch_id = epr.epoch_id and epf.symbol = epr.symbol " +
 			"where epr.epoch_id > (:startEpochId - 1) and epr.epoch_id < :endEpochId group by epr.voter;", nativeQuery = true)
-	public List<FTSODataProviderAccuracyDTO> getProviderAccuracies(
+	public List<FTSODataProviderAccuracyProjection> getProviderAccuracies(
 			@Param("startEpochId") BigInteger startEpochId,
 			@Param("endEpochId") BigInteger endEpochId);
 
@@ -46,7 +46,7 @@ public interface PriceFinalizedEventRepository extends JpaRepository<PriceFinali
 			"on epf.epoch_id = epr.epoch_id and epf.symbol = epr.symbol " +
 			"where epr.epoch_id > (:startEpochId - 1) and epr.epoch_id < :endEpochId " +
 			"and epr.voter = :address group by epr.voter;", nativeQuery = true)
-	public FTSODataProviderAccuracyDTO getProviderAccuracyByAddress(
+	public FTSODataProviderAccuracyProjection getProviderAccuracyByAddress(
 			@Param("address") String address,
 			@Param("startEpochId") BigInteger startEpochId,
 			@Param("endEpochId") BigInteger endEpochId);

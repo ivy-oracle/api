@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.ivy.api.repository.dto.FTSODataProviderSubmissionCountDTO;
+import com.ivy.api.dto.projection.FTSODataProviderSubmissionCountProjection;
 import com.ivy.api.repository.entity.PriceRevealedEventEntity;
 
 @Repository
@@ -23,13 +23,13 @@ public interface PriceRevealedEventRepository extends JpaRepository<PriceReveale
 
 	@Query(value = "select voter as address, count(epoch_id) as submissionCount "
 			+ "from price_revealed_event where epoch_id > (:startEpochId - 1) and epoch_id < :endEpochId group by voter", nativeQuery = true)
-	public List<FTSODataProviderSubmissionCountDTO> getProviderSubmissionCounts(
+	public List<FTSODataProviderSubmissionCountProjection> getProviderSubmissionCounts(
 			@Param("startEpochId") BigInteger startEpochId, @Param("endEpochId") BigInteger endEpochId);
 
 	@Query(value = "select voter as address, count(epoch_id) as submissionCount " +
 			"from price_revealed_event where epoch_id > (:startEpochId - 1) and epoch_id < :endEpochId " +
 			" and voter = :address group by voter", nativeQuery = true)
-	public FTSODataProviderSubmissionCountDTO getProviderSubmissionCountByAddress(
+	public FTSODataProviderSubmissionCountProjection getProviderSubmissionCountByAddress(
 			@Param("address") String address,
 			@Param("startEpochId") BigInteger startEpochId,
 			@Param("endEpochId") BigInteger endEpochId);
