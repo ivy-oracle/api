@@ -59,7 +59,7 @@ jobs:
   deploy-songbird:
     runs-on: ubuntu-20.04
     needs: build
-    name: Deploy on Songbird AWS EC2
+    name: Deploy on Songbird
     steps:
       - uses: actions/checkout@v2
       - name: Download Maven build artifact
@@ -79,7 +79,7 @@ jobs:
   deploy-flare:
     runs-on: ubuntu-20.04
     needs: build
-    name: Deploy on Flare AWS EC2
+    name: Deploy on Flare
     steps:
       - uses: actions/checkout@v2
       - name: Download Maven build artifact
