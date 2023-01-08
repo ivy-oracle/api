@@ -1,0 +1,81 @@
+name: Build project
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    name: Build Project
+    container: node:10.18-jessie
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "maven"
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.8.6
+      - name: Run Database Migrations
+        run: mvn -B flyway:migrate -Dflyway.url=jdbc:postgresql://postgres:5432/postgres -Dflyway.user=postgres -Dflyway.password=postgres
+      - name: Build and test project
+        env:
+          SPRING_PROFILES_ACTIVE: dev
+          RDS_HOSTNAME: postgres
+          RDS_PORT: 5432
+          RDS_DB_NAME: postgres
+          RDS_USERNAME: postgres
+          RDS_PASSWORD: postgres
+          SPRING_TASK_SCHEDULING_POOL_SIZE: 10
+          JOB_FTSO_PRICE_ENABLED: true
+          JOB_DELEGATION_EVENT_ENABLED: true
+          WEB3_CHAIN: flare
+          WEB3_RPC_URL: https://flare-api.flare.network/ext/bc/C/rpc
+          WEB3_RPC_BLOCK_LIMIT: 30
+        run: mvn -B verify
+      - name: Upload Maven build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifact.jar
+          path: target/api-0.0.1-SNAPSHOT.jar
+  deploy:
+    runs-on: ubuntu-20.04
+    needs: build
+    name: Deploy on AWS EC2
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download Maven build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: artifact.jar
+          path: target
+      - name: Deploy to EC2
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.FLARE_EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.FLARE_HOST }}
+          REMOTE_USER: ${{ secrets.FLARE_USERNAME }}
+          SOURCE: target
+          TARGET: ~/tmp
+          SCRIPT_AFTER: sudo mv ~/tmp/target/api-0.0.1-SNAPSHOT.jar /opt/dev && rm -rf ~/tmp && systemctl status ivy-api
