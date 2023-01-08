@@ -78,4 +78,4 @@ jobs:
           REMOTE_USER: ${{ secrets.FLARE_USERNAME }}
           SOURCE: target
           TARGET: ~/tmp
-          SCRIPT_AFTER: sudo mv ~/tmp/target/api-0.0.1-SNAPSHOT.jar /opt/dev && rm -rf ~/tmp && systemctl status ivy-api
+          SCRIPT_AFTER: sudo mv ~/tmp/target/api-0.0.1-SNAPSHOT.jar /opt/dev && rm -rf ~/tmp && sudo systemctl restart ivy-api
