@@ -15,7 +15,7 @@ public class IndexController {
 
     @GetMapping("/")
     public ResponseEntity<String> index() {
-        return ResponseEntity.ok("Ivy API");
+        return ResponseEntity.ok("Ivy API Dev");
     }
 
     @GetMapping("/ping")
