@@ -34,7 +34,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         bucketMap.putIfAbsent(ipAddress,
                 Bucket.builder()
-                        .addLimit(Bandwidth.classic(60, Refill.intervally(60, Duration.ofMinutes(1))))
+                        .addLimit(Bandwidth.classic(240, Refill.intervally(60, Duration.ofMinutes(1))))
                         .build());
 
         var tokenBucket = bucketMap.get(ipAddress);
