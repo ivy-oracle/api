@@ -25,10 +25,10 @@ public class FundTraceService {
 
         var fundMovements = transactions.stream().map(transaction -> FundMovementDTO.of(transaction)).toList();
 
-        if (levels > 1) {
+        if (levels > 1 && fundMovements.size() > 0) {
             for (var fundMovement : fundMovements) {
                 var excludeAddressesCopy = new ArrayList<>(excludeAddresses);
-                excludeAddresses.add(fundMovement.getFromAccount());
+                excludeAddressesCopy.add(fundMovement.getFromAccount());
                 fundMovement
                         .setTransactions(getFundMovements(fundMovement.getToAccount(), fromDate, toDate, levels - 1,
                                 excludeAddressesCopy));
