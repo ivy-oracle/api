@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ivy.api.dto.projection.FundMovementProjection;
 import com.ivy.api.repository.entity.EthTransactionEntity;
 
 @Repository
@@ -18,7 +19,13 @@ public interface EthTransactionRepository extends JpaRepository<EthTransactionEn
 
 	public EthTransactionEntity getByTransactionHash(String hash);
 
-	@Query(value = "SELECT (et).*, ea.is_contract is_contract_interaction FROM eth_transaction et " +
+	@Query(value = "SELECT " +
+			"et.transaction_hash as transactionHash, " +
+			"et.from_address as fromAddress, " +
+			"et.to_address as toAddress, " +
+			"et.value, " +
+			"ea.is_contract as isContract " +
+			"FROM eth_transaction et " +
 			"JOIN eth_block eb ON eb.block_number = et.block_number " +
 			"JOIN eth_address ea ON ea.eth_address = et.to_address " +
 			"WHERE et.from_address = :fromAddress AND " +
@@ -26,7 +33,7 @@ public interface EthTransactionRepository extends JpaRepository<EthTransactionEn
 			"eb.block_timestamp <= :endTimestamp AND " +
 			"et.value > 0 AND " +
 			"et.to_address NOT IN :excludeAddresses", nativeQuery = true)
-	public List<EthTransactionEntity> getByFromAddressAndStartTimestamp(
+	public List<FundMovementProjection> getByFromAddressAndStartTimestamp(
 			@Param("fromAddress") String fromAddress,
 			@Param("startTimestamp") Date startTimestamp,
 			@Param("endTimestamp") Date endTimestamp,

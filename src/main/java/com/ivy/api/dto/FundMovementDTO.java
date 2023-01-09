@@ -1,8 +1,11 @@
 package com.ivy.api.dto;
 
 import java.math.BigInteger;
+import java.util.List;
 
 import javax.validation.constraints.NotNull;
+
+import com.ivy.api.dto.projection.FundMovementProjection;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,4 +29,16 @@ public class FundMovementDTO {
 
     @NotNull
     private Boolean isContractInteraction;
+
+    @NotNull
+    private List<FundMovementDTO> transactions;
+
+    public static FundMovementDTO of(FundMovementProjection p) {
+        return FundMovementDTO.builder()
+                .transactionHash(p.getTransactionHash())
+                .fromAccount(p.getFromAddress())
+                .toAccount(p.getToAddress())
+                .amount(p.getValue())
+                .isContractInteraction(p.getIsContract()).build();
+    }
 }
