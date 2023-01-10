@@ -53,6 +53,12 @@ public class FundTraceService {
             List<String> excludeAddresses) {
         var transactions = this.getFundMovementTransactions(fromAddress, fromDate, toDate, levels, excludeAddresses);
         Map<String, FundMovementNodeDTO> addressToNodeMap = new HashMap<>();
+
+        if (transactions.size() == 0) {
+            addressToNodeMap.put(fromAddress, new FundMovementNodeDTO(fromAddress));
+            return addressToNodeMap;
+        }
+
         for (var transaction : transactions) {
             if (!addressToNodeMap.containsKey(transaction.getFromAccount())) {
                 addressToNodeMap.put(transaction.getFromAccount(),
