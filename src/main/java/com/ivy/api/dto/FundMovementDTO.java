@@ -1,7 +1,7 @@
 package com.ivy.api.dto;
 
 import java.math.BigInteger;
-import java.util.List;
+import java.util.Date;
 
 import javax.validation.constraints.NotNull;
 
@@ -28,10 +28,10 @@ public class FundMovementDTO {
     private BigInteger amount;
 
     @NotNull
-    private Boolean isContractInteraction;
+    private Date timestamp;
 
     @NotNull
-    private List<FundMovementDTO> transactions;
+    private Boolean isContractInteraction;
 
     public static FundMovementDTO of(FundMovementProjection p) {
         return FundMovementDTO.builder()
@@ -39,6 +39,7 @@ public class FundMovementDTO {
                 .fromAccount(p.getFromAddress())
                 .toAccount(p.getToAddress())
                 .amount(p.getValue())
+                .timestamp(p.getTimestamp())
                 .isContractInteraction(p.getIsContract()).build();
     }
 }

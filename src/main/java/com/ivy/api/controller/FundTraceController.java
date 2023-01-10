@@ -2,6 +2,7 @@ package com.ivy.api.controller;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.ivy.api.dto.FundMovementDTO;
+import com.ivy.api.dto.FundMovementNodeDTO;
 import com.ivy.api.service.FundTraceService;
 
 @Controller
@@ -24,7 +26,7 @@ public class FundTraceController {
     }
 
     @GetMapping()
-    public ResponseEntity<List<FundMovementDTO>> getFundMovements(
+    public ResponseEntity<Map<String, FundMovementNodeDTO>> getFundMovements(
             @RequestParam("fromAddress") String fromAddress,
             @RequestParam("fromDate") @DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss") Date fromDate,
             @RequestParam("toDate") @DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss") Date toDate,
@@ -33,7 +35,7 @@ public class FundTraceController {
                 "0x1000000000000000000000000000000000000002",
                 "0x1000000000000000000000000000000000000003");
         return ResponseEntity
-                .ok(this.fundTraceService.getFundMovements(fromAddress.toLowerCase(), fromDate, toDate, levels,
+                .ok(this.fundTraceService.getFundMovementNodes(fromAddress.toLowerCase(), fromDate, toDate, levels,
                         excludeAddresses));
     }
 }

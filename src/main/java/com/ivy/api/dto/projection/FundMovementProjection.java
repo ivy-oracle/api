@@ -1,6 +1,7 @@
 package com.ivy.api.dto.projection;
 
 import java.math.BigInteger;
+import java.util.Date;
 
 public interface FundMovementProjection {
 
@@ -11,6 +12,8 @@ public interface FundMovementProjection {
     String getToAddress();
 
     BigInteger getValue();
+
+    Date getTimestamp();
 
     Boolean getIsContract();
 }

@@ -24,6 +24,7 @@ public interface EthTransactionRepository extends JpaRepository<EthTransactionEn
 			"et.from_address as fromAddress, " +
 			"et.to_address as toAddress, " +
 			"et.value, " +
+			"eb.block_timestamp as timestamp, " +
 			"ea.is_contract as isContract " +
 			"FROM eth_transaction et " +
 			"JOIN eth_block eb ON eb.block_number = et.block_number " +
