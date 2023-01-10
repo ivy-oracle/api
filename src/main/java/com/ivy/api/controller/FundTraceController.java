@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.ivy.api.dto.FundMovementDTO;
 import com.ivy.api.dto.FundMovementNodeDTO;
 import com.ivy.api.service.FundTraceService;
 
@@ -28,8 +27,8 @@ public class FundTraceController {
     @GetMapping()
     public ResponseEntity<Map<String, FundMovementNodeDTO>> getFundMovements(
             @RequestParam("fromAddress") String fromAddress,
-            @RequestParam("fromDate") @DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss") Date fromDate,
-            @RequestParam("toDate") @DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss") Date toDate,
+            @RequestParam("fromDate") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date fromDate,
+            @RequestParam("toDate") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date toDate,
             @RequestParam Integer levels) {
         var excludeAddresses = List.of("0x1000000000000000000000000000000000000001",
                 "0x1000000000000000000000000000000000000002",

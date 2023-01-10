@@ -1,7 +1,7 @@
 package com.ivy.api.dto;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.validation.constraints.NotNull;
 
@@ -17,15 +17,15 @@ public class FundMovementNodeDTO {
     private String address;
 
     @NotNull
-    private List<FundMovementDTO> initiatedTransactions;
+    private Set<FundMovementDTO> initiatedTransactions;
 
     @NotNull
-    private List<FundMovementDTO> receivedTransactions;
+    private Set<FundMovementDTO> receivedTransactions;
 
     public FundMovementNodeDTO(String address) {
         this.address = address;
-        this.initiatedTransactions = new ArrayList<>();
-        this.receivedTransactions = new ArrayList<>();
+        this.initiatedTransactions = new HashSet<>();
+        this.receivedTransactions = new HashSet<>();
     }
 
 }
