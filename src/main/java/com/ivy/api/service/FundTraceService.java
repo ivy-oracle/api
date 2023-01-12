@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.stereotype.Service;
 
@@ -48,32 +49,38 @@ public class FundTraceService {
             node.setChildNodesCount(toAddressesCount);
             node.setHasMoreChildNodes(toAddressesCount > toAddresses.size());
 
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
             for (var toAddress : toAddresses) {
-                var transactions = ethTransactionRepository.getByFromAddressAndToAddressAndTimestamps(node.getAddress(),
-                        toAddress,
-                        fromDate, toDate, transactionLimit);
-                var transactionCount = ethTransactionRepository.getCountByFromAddressAndToAddressAndTimestamps(
-                        node.getAddress(),
-                        toAddress,
-                        fromDate, toDate);
-                var transactionSum = ethTransactionRepository.getSumByFromAddressAndToAddressAndTimestamps(
-                        node.getAddress(),
-                        toAddress,
-                        fromDate, toDate);
-                var fundMovementTransactions = transactions.stream().map(tx -> FundMovementTransactionDTO.of(tx))
-                        .toList();
-                node.getInitiatedTransactions().getData()
-                        .addAll(fundMovementTransactions);
-                node.getInitiatedTransactions().setTotalCount(transactionCount);
-                node.getInitiatedTransactions().setLimit(transactionLimit);
-                node.getInitiatedTransactions().setHasMore(transactionCount > transactionLimit);
-                node.getInitiatedTransactions().setPage(1);
-                node.getInitiatedTransactions().setAmount(CommonUtil.convertTokenToMiminalToken(transactionSum));
+                var future = CompletableFuture.runAsync(() -> {
+                    var transactions = ethTransactionRepository.getByFromAddressAndToAddressAndTimestamps(
+                            node.getAddress(),
+                            toAddress,
+                            fromDate, toDate, transactionLimit);
+                    var transactionCount = ethTransactionRepository.getCountByFromAddressAndToAddressAndTimestamps(
+                            node.getAddress(),
+                            toAddress,
+                            fromDate, toDate);
+                    var transactionSum = ethTransactionRepository.getSumByFromAddressAndToAddressAndTimestamps(
+                            node.getAddress(),
+                            toAddress,
+                            fromDate, toDate);
+                    var fundMovementTransactions = transactions.stream().map(tx -> FundMovementTransactionDTO.of(tx))
+                            .toList();
+                    node.getInitiatedTransactions().getData()
+                            .addAll(fundMovementTransactions);
+                    node.getInitiatedTransactions().setTotalCount(transactionCount);
+                    node.getInitiatedTransactions().setLimit(transactionLimit);
+                    node.getInitiatedTransactions().setHasMore(transactionCount > transactionLimit);
+                    node.getInitiatedTransactions().setPage(1);
+                    node.getInitiatedTransactions().setAmount(CommonUtil.convertTokenToMiminalToken(transactionSum));
 
-                var toNode = new FundMovementNodeDTO(toAddress, node.getLevel() + 1);
-                toNode.setReceivedTransactions(node.getInitiatedTransactions());
-                nodesQueue.add(toNode);
+                    var toNode = new FundMovementNodeDTO(toAddress, node.getLevel() + 1);
+                    toNode.setReceivedTransactions(node.getInitiatedTransactions());
+                    nodesQueue.add(toNode);
+                });
+                futures.add(future);
             }
+            futures.stream().forEach(future -> future.join());
             if (node.getLevel() + 1 > levels) {
                 break;
             }
