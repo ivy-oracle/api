@@ -34,7 +34,7 @@ public class FundTraceController {
                 "0x1000000000000000000000000000000000000002",
                 "0x1000000000000000000000000000000000000003");
         return ResponseEntity
-                .ok(this.fundTraceService.getFundMovementNodes(fromAddress.toLowerCase(), fromDate, toDate, levels,
+                .ok(this.fundTraceService.getFundMovements(fromAddress.toLowerCase(), fromDate, toDate, levels,
                         excludeAddresses));
     }
 }

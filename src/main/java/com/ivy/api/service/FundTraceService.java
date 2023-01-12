@@ -3,14 +3,17 @@ package com.ivy.api.service;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.springframework.stereotype.Service;
 
-import com.ivy.api.dto.FundMovementDTO;
+import com.ivy.api.dto.FundMovementTransactionDTO;
 import com.ivy.api.dto.FundMovementNodeDTO;
 import com.ivy.api.repository.EthTransactionRepository;
+import com.ivy.api.util.CommonUtil;
 
 @Service
 public class FundTraceService {
@@ -21,57 +24,67 @@ public class FundTraceService {
         this.ethTransactionRepository = ethTransactionRepository;
     }
 
-    public List<FundMovementDTO> getFundMovementTransactions(String fromAddress, Date fromDate, Date toDate,
+    public Map<String, FundMovementNodeDTO> getFundMovements(String fromAddress, Date fromDate, Date toDate,
             Integer levels,
             List<String> excludeAddresses) {
-        var transactions = this.ethTransactionRepository.getByFromAddressAndStartTimestamp(fromAddress, fromDate,
-                toDate, excludeAddresses);
+        Integer transactionLimit = 10;
+        Integer nodeLimit = 5;
 
-        List<FundMovementDTO> fundMovements = transactions.stream().map(transaction -> FundMovementDTO.of(transaction))
-                .toList();
-        List<FundMovementDTO> outputFundMovements = new ArrayList<>(fundMovements);
+        Map<String, FundMovementNodeDTO> nodesMap = new HashMap<>();
+        Queue<FundMovementNodeDTO> nodesQueue = new LinkedList<>();
+        nodesQueue.add(new FundMovementNodeDTO(fromAddress, 0));
 
-        if (levels > 1 && fundMovements.size() > 0) {
-            for (var fundMovement : fundMovements) {
-                var excludeAddressesCopy = new ArrayList<>(excludeAddresses);
-                excludeAddressesCopy.add(fundMovement.getFromAccount());
-                var moreFundMovements = getFundMovementTransactions(fundMovement.getToAccount(),
-                        fundMovement.getTimestamp(),
-                        toDate, levels - 1,
-                        excludeAddressesCopy);
-                if (moreFundMovements.size() > 0) {
-                    outputFundMovements.addAll(moreFundMovements);
-                }
+        var currentExcludeAddresses = new ArrayList<>(excludeAddresses);
+
+        while (!nodesQueue.isEmpty()) {
+            var node = nodesQueue.poll();
+            nodesMap.put(node.getAddress(), node);
+            currentExcludeAddresses.add(node.getAddress());
+
+            List<String> toAddresses = ethTransactionRepository.getDistinctToAddressByFromAddressAndTimestamps(
+                    node.getAddress(), fromDate, toDate, currentExcludeAddresses, nodeLimit);
+            Integer toAddressesCount = ethTransactionRepository.getDistinctToAddressCountByFromAddressAndTimestamps(
+                    node.getAddress(), fromDate, toDate, currentExcludeAddresses);
+            node.setChildNodesCount(toAddressesCount);
+            node.setHasMoreChildNodes(toAddressesCount > toAddresses.size());
+
+            for (var toAddress : toAddresses) {
+                var transactions = ethTransactionRepository.getByFromAddressAndToAddressAndTimestamps(node.getAddress(),
+                        toAddress,
+                        fromDate, toDate, transactionLimit);
+                var transactionCount = ethTransactionRepository.getCountByFromAddressAndToAddressAndTimestamps(
+                        node.getAddress(),
+                        toAddress,
+                        fromDate, toDate);
+                var transactionSum = ethTransactionRepository.getSumByFromAddressAndToAddressAndTimestamps(
+                        node.getAddress(),
+                        toAddress,
+                        fromDate, toDate);
+                var fundMovementTransactions = transactions.stream().map(tx -> FundMovementTransactionDTO.of(tx))
+                        .toList();
+                node.getInitiatedTransactions().getData()
+                        .addAll(fundMovementTransactions);
+                node.getInitiatedTransactions().setTotalCount(transactionCount);
+                node.getInitiatedTransactions().setLimit(transactionLimit);
+                node.getInitiatedTransactions().setHasMore(transactionCount > transactionLimit);
+                node.getInitiatedTransactions().setPage(1);
+                node.getInitiatedTransactions().setAmount(CommonUtil.convertTokenToMiminalToken(transactionSum));
+
+                var toNode = new FundMovementNodeDTO(toAddress, node.getLevel() + 1);
+                toNode.setReceivedTransactions(node.getInitiatedTransactions());
+                nodesQueue.add(toNode);
+            }
+            if (node.getLevel() + 1 > levels) {
+                break;
             }
         }
 
-        return outputFundMovements;
-    }
-
-    public Map<String, FundMovementNodeDTO> getFundMovementNodes(String fromAddress, Date fromDate, Date toDate,
-            Integer levels,
-            List<String> excludeAddresses) {
-        var transactions = this.getFundMovementTransactions(fromAddress, fromDate, toDate, levels, excludeAddresses);
-        Map<String, FundMovementNodeDTO> addressToNodeMap = new HashMap<>();
-
-        if (transactions.size() == 0) {
-            addressToNodeMap.put(fromAddress, new FundMovementNodeDTO(fromAddress));
-            return addressToNodeMap;
+        while (!nodesQueue.isEmpty()) {
+            var node = nodesQueue.poll();
+            node.setInitiatedTransactions(null);
+            nodesMap.put(node.getAddress(), node);
         }
 
-        for (var transaction : transactions) {
-            if (!addressToNodeMap.containsKey(transaction.getFromAccount())) {
-                addressToNodeMap.put(transaction.getFromAccount(),
-                        new FundMovementNodeDTO(transaction.getFromAccount()));
-            }
-            if (!addressToNodeMap.containsKey(transaction.getToAccount())) {
-                addressToNodeMap.put(transaction.getToAccount(), new FundMovementNodeDTO(transaction.getToAccount()));
-            }
-        }
-        for (var transaction : transactions) {
-            addressToNodeMap.get(transaction.getFromAccount()).getInitiatedTransactions().add(transaction);
-            addressToNodeMap.get(transaction.getToAccount()).getReceivedTransactions().add(transaction);
-        }
-        return addressToNodeMap;
+        return nodesMap;
     }
 }

@@ -17,15 +17,25 @@ public class FundMovementNodeDTO {
     private String address;
 
     @NotNull
-    private Set<FundMovementDTO> initiatedTransactions;
+    private Integer level;
 
     @NotNull
-    private Set<FundMovementDTO> receivedTransactions;
+    private Integer childNodesCount;
 
-    public FundMovementNodeDTO(String address) {
+    @NotNull
+    private Boolean hasMoreChildNodes;
+
+    @NotNull
+    private FundMovementDTO initiatedTransactions;
+
+    @NotNull
+    private FundMovementDTO receivedTransactions;
+
+    public FundMovementNodeDTO(String address, Integer level) {
         this.address = address;
-        this.initiatedTransactions = new HashSet<>();
-        this.receivedTransactions = new HashSet<>();
+        this.level = level;
+        this.initiatedTransactions = new FundMovementDTO();
+        this.receivedTransactions = new FundMovementDTO();
     }
 
 }
