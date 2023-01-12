@@ -12,19 +12,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.ivy.api.dto.FundMovementNodeDTO;
-import com.ivy.api.service.FundTraceService;
+import com.ivy.api.service.AccountService;
 
 @Controller
-@RequestMapping("fund-trace")
-public class FundTraceController {
+@RequestMapping("account")
+public class AccountController {
 
-    private final FundTraceService fundTraceService;
+    private final AccountService accountService;
 
-    FundTraceController(FundTraceService fundTraceService) {
-        this.fundTraceService = fundTraceService;
+    AccountController(AccountService accountService) {
+        this.accountService = accountService;
     }
 
-    @GetMapping()
+    @GetMapping("fund-tracing")
     public ResponseEntity<Map<String, FundMovementNodeDTO>> getFundMovements(
             @RequestParam("fromAddress") String fromAddress,
             @RequestParam("fromDate") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date fromDate,
@@ -34,7 +34,7 @@ public class FundTraceController {
                 "0x1000000000000000000000000000000000000002",
                 "0x1000000000000000000000000000000000000003");
         return ResponseEntity
-                .ok(this.fundTraceService.getFundMovements(fromAddress.toLowerCase(), fromDate, toDate,
+                .ok(this.accountService.getFundMovements(fromAddress.toLowerCase(), fromDate, toDate,
                         Math.min(levels, 3),
                         excludeAddresses));
     }

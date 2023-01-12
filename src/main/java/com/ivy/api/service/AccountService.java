@@ -17,11 +17,11 @@ import com.ivy.api.repository.EthTransactionRepository;
 import com.ivy.api.util.CommonUtil;
 
 @Service
-public class FundTraceService {
+public class AccountService {
 
     private final EthTransactionRepository ethTransactionRepository;
 
-    FundTraceService(EthTransactionRepository ethTransactionRepository) {
+    AccountService(EthTransactionRepository ethTransactionRepository) {
         this.ethTransactionRepository = ethTransactionRepository;
     }
 
