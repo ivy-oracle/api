@@ -1,30 +1,34 @@
 package com.ivy.api.service;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.web3j.protocol.Web3j;
 
 import com.ivy.api.dto.DelegationStatDTO;
+import com.ivy.api.dto.PaginatedDTO;
+import com.ivy.api.repository.DelegationEventRepository;
 import com.ivy.api.repository.DelegationRepository;
 import com.ivy.api.repository.EthBlockRepository;
 import com.ivy.api.repository.entity.DelegationEntity;
+import com.ivy.api.repository.entity.DelegationEventEntity;
 import com.ivy.api.util.CommonUtil;
 
 @Service
 public class DelegationService {
 
     private final DelegationRepository delegationRepository;
+    private final DelegationEventRepository delegationEventRepository;
     private final ContractService contractService;
     private final EthBlockRepository ethBlockRepository;
 
-    public DelegationService(DelegationRepository delegationRepository, ContractService contractService,
+    public DelegationService(DelegationRepository delegationRepository,
+            DelegationEventRepository delegationEventRepository, ContractService contractService,
             EthBlockRepository ethBlockRepository) {
         this.delegationRepository = delegationRepository;
+        this.delegationEventRepository = delegationEventRepository;
         this.contractService = contractService;
         this.ethBlockRepository = ethBlockRepository;
     }
@@ -63,5 +67,9 @@ public class DelegationService {
             delegationStat.setPercentageChange24Hour(change);
         }
         return delegationStats;
+    }
+
+    public PaginatedDTO<DelegationEventEntity> getDelegationHistory(String address, Pageable pageable) {
+        return new PaginatedDTO<DelegationEventEntity>(delegationEventRepository.findByFrom(address, pageable));
     }
 }

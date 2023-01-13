@@ -5,6 +5,8 @@ import java.util.List;
 
 import javax.validation.constraints.NotNull;
 
+import org.springframework.data.domain.Page;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,5 +33,12 @@ public class PaginatedDTO<T> {
 
     public PaginatedDTO() {
         this.data = new ArrayList<>();
+    }
+
+    public PaginatedDTO(Page<T> page) {
+        this.data = page.getContent();
+        this.limit = page.getSize();
+        this.totalCount = page.getTotalElements();
+        this.hasMore = page.hasNext();
     }
 }

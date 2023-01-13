@@ -4,6 +4,8 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +20,10 @@ import com.ivy.api.repository.entity.EthTransactionEntity;
 public interface EthTransactionRepository extends JpaRepository<EthTransactionEntity, BigInteger> {
 
 	public EthTransactionEntity getByTransactionHash(String hash);
+
+	@Query(value = "SELECT et.* FROM eth_transaction et WHERE (et.from_address = :address OR et.to_address = :address) AND et.to_address NOT IN :excludeAddresses", nativeQuery = true)
+	public Page<EthTransactionEntity> getByInvolvedAddress(@Param("address") String address,
+			@Param("excludeAddresses") List<String> excludeAddresses, Pageable pageable);
 
 	@Query(value = "SELECT " +
 			"et.transaction_hash as transactionHash, " +

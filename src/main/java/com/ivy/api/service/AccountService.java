@@ -9,20 +9,39 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import com.ivy.api.dto.FundMovementTransactionDTO;
+import com.ivy.api.constant.Address;
+import com.ivy.api.dto.AccountDetailDTO;
 import com.ivy.api.dto.FundMovementNodeDTO;
+import com.ivy.api.dto.FundMovementTransactionDTO;
+import com.ivy.api.dto.PaginatedDTO;
+import com.ivy.api.repository.DelegationEventRepository;
 import com.ivy.api.repository.EthTransactionRepository;
+import com.ivy.api.repository.entity.DelegationEventEntity;
 import com.ivy.api.util.CommonUtil;
 
 @Service
 public class AccountService {
 
     private final EthTransactionRepository ethTransactionRepository;
+    private final DelegationEventRepository delegationEventRepository;
 
-    AccountService(EthTransactionRepository ethTransactionRepository) {
+    AccountService(EthTransactionRepository ethTransactionRepository,
+            DelegationEventRepository delegationEventRepository) {
         this.ethTransactionRepository = ethTransactionRepository;
+        this.delegationEventRepository = delegationEventRepository;
+    }
+
+    public AccountDetailDTO getAccountDetail(String address, Boolean excludeStatic, Pageable pageable) {
+        List<String> excludeAddresses = excludeStatic ? Address.Statics : List.of();
+        var transactions = ethTransactionRepository.getByInvolvedAddress(address, excludeAddresses, pageable);
+        var transactionsPaginated = new PaginatedDTO<>(transactions);
+        var delegationHistory = new PaginatedDTO<DelegationEventEntity>(
+                delegationEventRepository.findByFrom(address, pageable));
+        var accountDetail = new AccountDetailDTO(address, transactionsPaginated, delegationHistory);
+        return accountDetail;
     }
 
     public Map<String, FundMovementNodeDTO> getFundMovements(String fromAddress, Date fromDate, Date toDate,
