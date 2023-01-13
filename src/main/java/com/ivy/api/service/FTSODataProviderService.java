@@ -1,6 +1,5 @@
 package com.ivy.api.service;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +30,9 @@ import com.ivy.api.repository.PriceFinalizedEventRepository;
 import com.ivy.api.repository.PriceRevealedEventRepository;
 import com.ivy.api.util.CommonUtil;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class FTSODataProviderService {
@@ -119,6 +121,17 @@ public class FTSODataProviderService {
 				var result = task.get();
 				result.setCurrentVotePowerPercentage(result.getCurrentVotePower() / totalVotePower);
 				result.setLockedVotePowerPercentage(result.getLockedVotePower() / totalVotePower);
+				Float nextEpochFee = result.getFee();
+				var nextRewardEpochID = rewardEpochDTO.getEpochId().intValue() + 1;
+				for (var i = 0; i < result.getScheduledFeeChanges().size(); i++) {
+					var feeChange = result.getScheduledFeeChanges().get(i);
+					if (feeChange.getValidFromEpoch() == nextRewardEpochID) {
+						nextEpochFee = feeChange.getFee();
+					}
+				}
+				result.setProjectedRewardRate(getProjectedRewardRate(result.getRewardRate(),
+						result.getLockedVotePowerPercentage(), result.getCurrentVotePowerPercentage(),
+						result.getFee(), nextEpochFee));
 				results.add(result);
 			} catch (ExecutionException e) {
 				throw new ResponseStatusException(
@@ -178,6 +191,19 @@ public class FTSODataProviderService {
 
 		ftsoDataProviderDTO.setCurrentVotePowerPercentage(ftsoDataProviderDTO.getCurrentVotePower() / totalVotePower);
 		ftsoDataProviderDTO.setLockedVotePowerPercentage(ftsoDataProviderDTO.getLockedVotePower() / totalVotePower);
+
+		Float nextEpochFee = ftsoDataProviderDTO.getFee();
+		var nextRewardEpochID = rewardEpochDTO.getEpochId().intValue() + 1;
+		for (var i = 0; i < ftsoDataProviderDTO.getScheduledFeeChanges().size(); i++) {
+			var feeChange = ftsoDataProviderDTO.getScheduledFeeChanges().get(i);
+			if (feeChange.getValidFromEpoch() == nextRewardEpochID) {
+				nextEpochFee = feeChange.getFee();
+			}
+		}
+		ftsoDataProviderDTO.setProjectedRewardRate(getProjectedRewardRate(ftsoDataProviderDTO.getRewardRate(),
+				ftsoDataProviderDTO.getLockedVotePowerPercentage(), ftsoDataProviderDTO.getCurrentVotePowerPercentage(),
+				ftsoDataProviderDTO.getFee(), nextEpochFee));
+
 		return ftsoDataProviderDTO;
 	}
 
@@ -330,5 +356,17 @@ public class FTSODataProviderService {
 
 			return ftsoDataProviderDTO;
 		}
+	}
+
+	private float getProjectedRewardRate(Float rewardRate, Double lockedVotePowerPercentage,
+			Double currentVotePowerPercentage, Float fee,
+			Float newFee) {
+		// TODO: Fetch from contract
+		Double votePowerCap = 0.025;
+		Double uncappedCurrentRewardRate = rewardRate / Double.min(lockedVotePowerPercentage, votePowerCap)
+				* lockedVotePowerPercentage / (1 - fee);
+		Double projectedRewardRate = uncappedCurrentRewardRate / currentVotePowerPercentage
+				* Double.min(currentVotePowerPercentage, votePowerCap) * (1 - newFee);
+		return projectedRewardRate.floatValue();
 	}
 }

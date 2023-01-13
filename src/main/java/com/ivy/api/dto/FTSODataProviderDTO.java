@@ -39,6 +39,13 @@ public class FTSODataProviderDTO {
     @NotNull
     float rewardRate;
 
+    /**
+     * Projected reward rate of next reward epoch given current vote power and
+     * scheduled fee changes
+     */
+    @NotNull
+    float projectedRewardRate;
+
     @NotNull
     float averageRewardRate;
 
