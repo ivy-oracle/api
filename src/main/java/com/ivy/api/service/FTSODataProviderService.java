@@ -70,13 +70,15 @@ public class FTSODataProviderService {
 
 	@Cacheable(value = "FTSODataProviderService.getAllFTSODataProviders")
 	public List<FTSODataProviderDTO> getAllFTSODataProviders() {
-		var totalVotePowerFuture = this.contractService.wNat.totalVotePower().sendAsync();
-
 		var votersAddressMap = self.fetchAllWhitelistedVoters();
 
 		RewardEpochDTO rewardEpochDTO = this.ftsoService.getRewardEpoch();
 		PriceEpochDTO priceEpochDTO = this.ftsoService.getPriceEpoch();
 		BigInteger priceEpochId = priceEpochDTO.getEpochId().subtract(BigInteger.ONE);
+
+		var totalVotePowerFuture = this.contractService.wNat.totalVotePower().sendAsync();
+		var totalLockedVotePowerFuture = this.contractService.wNat
+				.totalVotePowerAt(rewardEpochDTO.getVotePowerLockBlockNumber()).sendAsync();
 
 		Map<String, Long> providerSubmissionCountMap = new HashMap<>();
 		var providerSubmissionCounts = this.priceRevealedEventRepository.getProviderSubmissionCounts(
@@ -114,13 +116,14 @@ public class FTSODataProviderService {
 		});
 
 		var totalVotePower = CommonUtil.convertTokenToMiminalToken(totalVotePowerFuture.join());
+		var totalLockedVotePower = CommonUtil.convertTokenToMiminalToken(totalLockedVotePowerFuture.join());
 
 		List<FTSODataProviderDTO> results = new ArrayList<>();
 		for (var task : tasks) {
 			try {
 				var result = task.get();
 				result.setCurrentVotePowerPercentage(result.getCurrentVotePower() / totalVotePower);
-				result.setLockedVotePowerPercentage(result.getLockedVotePower() / totalVotePower);
+				result.setLockedVotePowerPercentage(result.getLockedVotePower() / totalLockedVotePower);
 				Float nextEpochFee = result.getFee();
 				var nextRewardEpochID = rewardEpochDTO.getEpochId().intValue() + 1;
 				for (var i = 0; i < result.getScheduledFeeChanges().size(); i++) {
@@ -147,14 +150,16 @@ public class FTSODataProviderService {
 
 	@Cacheable(value = "FTSODataProviderService.getFTSODataProvider")
 	public FTSODataProviderDTO getFTSODataProvider(String address) {
-		var totalVotePowerFuture = this.contractService.wNat.totalVotePower().sendAsync();
-
 		var checkedSumAddress = Keys.toChecksumAddress(address);
 		var votersAddressMap = self.fetchAllWhitelistedVoters();
 
 		RewardEpochDTO rewardEpochDTO = this.ftsoService.getRewardEpoch();
 		PriceEpochDTO priceEpochDTO = this.ftsoService.getPriceEpoch();
 		BigInteger priceEpochId = priceEpochDTO.getEpochId().subtract(BigInteger.ONE);
+
+		var totalVotePowerFuture = this.contractService.wNat.totalVotePower().sendAsync();
+		var totalLockedVotePowerFuture = this.contractService.wNat
+				.totalVotePowerAt(rewardEpochDTO.getVotePowerLockBlockNumber()).sendAsync();
 
 		var submissionCountDTO = this.priceRevealedEventRepository
 				.getProviderSubmissionCountByAddress(checkedSumAddress, priceEpochId.subtract(BigInteger.valueOf(120)),
@@ -188,9 +193,11 @@ public class FTSODataProviderService {
 		}
 
 		var totalVotePower = CommonUtil.convertTokenToMiminalToken(totalVotePowerFuture.join());
+		var totalLockedVotePower = CommonUtil.convertTokenToMiminalToken(totalLockedVotePowerFuture.join());
 
 		ftsoDataProviderDTO.setCurrentVotePowerPercentage(ftsoDataProviderDTO.getCurrentVotePower() / totalVotePower);
-		ftsoDataProviderDTO.setLockedVotePowerPercentage(ftsoDataProviderDTO.getLockedVotePower() / totalVotePower);
+		ftsoDataProviderDTO
+				.setLockedVotePowerPercentage(ftsoDataProviderDTO.getLockedVotePower() / totalLockedVotePower);
 
 		Float nextEpochFee = ftsoDataProviderDTO.getFee();
 		var nextRewardEpochID = rewardEpochDTO.getEpochId().intValue() + 1;
