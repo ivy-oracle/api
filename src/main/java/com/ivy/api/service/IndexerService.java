@@ -64,6 +64,8 @@ public class IndexerService {
     public List<EthBlockEntity> indexBlocks(BigInteger from, BigInteger to, Boolean reverse) throws IOException {
         var unIndexedBlockNumbers = this.ethBlockRepository.getUnIndexedBlockNumbers(from, to);
 
+        log.debug("indexing {} un-indexed blocks from {} - {}", unIndexedBlockNumbers.size(), from, to);
+
         if (reverse) {
             Collections.reverse(unIndexedBlockNumbers);
         }
@@ -165,6 +167,7 @@ public class IndexerService {
         }
 
         this.ethAddressRepository.saveAll(addressEntities);
+        this.ethAddressRepository.flush();
         this.ethTransactionRepository.saveAll(transactionEntities);
 
         return ethBlockEntity;
