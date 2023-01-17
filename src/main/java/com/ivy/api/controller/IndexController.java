@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ivy.api.annotation.RequireAuth;
+
 @RestController
 public class IndexController {
     private final ConfigurableEnvironment configurableEnvironment;
@@ -20,6 +22,12 @@ public class IndexController {
 
     @GetMapping("/ping")
     public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("pong");
+    }
+
+    @GetMapping("/ping-protected")
+    @RequireAuth
+    public ResponseEntity<String> pingProtected() {
         return ResponseEntity.ok("pong");
     }
 
