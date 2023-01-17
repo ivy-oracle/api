@@ -22,6 +22,9 @@ import com.ivy.api.repository.EthTransactionRepository;
 import com.ivy.api.repository.entity.DelegationEventEntity;
 import com.ivy.api.util.CommonUtil;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 public class AccountService {
 
@@ -34,12 +37,15 @@ public class AccountService {
         this.delegationEventRepository = delegationEventRepository;
     }
 
-    public AccountDetailDTO getAccountDetail(String address, Boolean excludeStatic, Pageable pageable) {
+    public AccountDetailDTO getAccountDetail(String address, Boolean excludeStatic, Pageable transactionsPageable,
+            Pageable delegationPageable) {
         List<String> excludeAddresses = excludeStatic ? Address.Statics : List.of();
-        var transactions = ethTransactionRepository.getByInvolvedAddress(address, excludeAddresses, pageable);
+        var transactions = ethTransactionRepository.getByInvolvedAddress(address, excludeAddresses,
+                transactionsPageable);
         var transactionsPaginated = new PaginatedDTO<>(transactions);
+
         var delegationHistory = new PaginatedDTO<DelegationEventEntity>(
-                delegationEventRepository.findByFrom(address, pageable));
+                delegationEventRepository.findByFrom(address, delegationPageable));
         var accountDetail = new AccountDetailDTO(address, transactionsPaginated, delegationHistory);
         return accountDetail;
     }
