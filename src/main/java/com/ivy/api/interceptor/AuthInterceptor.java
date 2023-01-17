@@ -1,8 +1,6 @@
 package com.ivy.api.interceptor;
 
 import java.io.PrintWriter;
-import java.lang.annotation.Annotation;
-import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -12,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
-import org.web3j.protocol.Web3j;
 
 import com.ivy.api.annotation.RequireAuth;
 import com.ivy.api.service.AuthService;
@@ -29,7 +26,12 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
-        final RequireAuth requireAuth = ((HandlerMethod) handler).getMethod().getAnnotation((RequireAuth.class));
+        RequireAuth requireAuth = null;
+        try {
+            requireAuth = ((HandlerMethod) handler).getMethod().getAnnotation((RequireAuth.class));
+        } catch (ClassCastException e) {
+
+        }
         if (requireAuth == null) {
             return true;
         }
