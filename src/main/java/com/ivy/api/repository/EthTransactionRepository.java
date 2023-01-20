@@ -25,6 +25,10 @@ public interface EthTransactionRepository extends JpaRepository<EthTransactionEn
 	public Page<EthTransactionEntity> getByInvolvedAddress(@Param("address") String address,
 			@Param("excludeAddresses") List<String> excludeAddresses, Pageable pageable);
 
+	@Query(value = "SELECT et.* FROM eth_transaction et WHERE (et.from_address = :address OR et.to_address = :address) AND et.to_address NOT IN :excludeAddresses", nativeQuery = true)
+	public List<EthTransactionEntity> getByInvolvedAddress(@Param("address") String address,
+			@Param("excludeAddresses") List<String> excludeAddresses);
+
 	@Query(value = "SELECT " +
 			"et.transaction_hash as transactionHash, " +
 			"et.from_address as fromAddress, " +

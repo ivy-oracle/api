@@ -2,7 +2,12 @@ package com.ivy.api.controller;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +18,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
+import org.supercsv.io.CsvBeanWriter;
+import org.supercsv.io.ICsvBeanWriter;
+import org.supercsv.prefs.CsvPreference;
 
 import com.ivy.api.constant.TaskStatus;
 import com.ivy.api.repository.entity.EthBlockEntity;
@@ -65,4 +73,33 @@ public class IndexerController {
             @PathVariable("transactionHash") String transactionHash) {
         return ResponseEntity.ok(this.indexerService.getTransaction(transactionHash));
     }
+
+    @GetMapping("export/transaction")
+    public void exportToCSV(HttpServletResponse response, @RequestParam("address") String address) throws IOException {
+        response.setContentType("text/csv");
+        DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        String currentDateTime = dateFormatter.format(new Date());
+
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment; filename=users_" + currentDateTime + ".csv";
+        response.setHeader(headerKey, headerValue);
+
+        List<EthTransactionEntity> listUsers = indexerService
+                .getTransactions(address.toLowerCase());
+
+        ICsvBeanWriter csvWriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
+        String[] csvHeader = { "hash", "fromAddress", "toAddress", "value", "gas", "gasPrice", "nonce",
+                "transactionIndex", "Block Number", "Block Hash", "Timestamp" };
+        String[] nameMapping = { "transactionHash", "fromAddress", "toAddress", "value", "gas", "gasPrice", "nonce",
+                "transactionIndex", "blockNumber", "blockHash", "timestamp" };
+
+        csvWriter.writeHeader(csvHeader);
+
+        for (EthTransactionEntity user : listUsers) {
+            csvWriter.write(user, nameMapping);
+        }
+
+        csvWriter.close();
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.ivy.api.repository.entity;
 
 import java.math.BigInteger;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -58,4 +59,16 @@ public class EthTransactionEntity {
     @ManyToOne
     @JoinColumn(name = "block_number", referencedColumnName = "block_number")
     private EthBlockEntity block;
+
+    public BigInteger getBlockNumber() {
+        return block.getBlockNumber();
+    };
+
+    public String getBlockHash() {
+        return block.getBlockHash();
+    };
+
+    public Date getTimestamp() {
+        return block.getTimestamp();
+    };
 }

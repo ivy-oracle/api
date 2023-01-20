@@ -22,6 +22,7 @@ import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthGetCode;
 import org.web3j.protocol.core.methods.response.Transaction;
 
+import com.ivy.api.constant.Address;
 import com.ivy.api.repository.EthAddressRepository;
 import com.ivy.api.repository.EthBlockRepository;
 import com.ivy.api.repository.EthTransactionRepository;
@@ -59,6 +60,10 @@ public class IndexerService {
 
     public EthTransactionEntity getTransaction(String hash) {
         return this.ethTransactionRepository.getByTransactionHash(hash);
+    }
+
+    public List<EthTransactionEntity> getTransactions(String address) {
+        return this.ethTransactionRepository.getByInvolvedAddress(address, Address.Statics);
     }
 
     public List<EthBlockEntity> indexBlocks(BigInteger from, BigInteger to, Boolean reverse) throws IOException {

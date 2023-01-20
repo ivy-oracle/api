@@ -5,7 +5,7 @@ CREATE TABLE "eth_user" (
     last_logged_in_at TIMESTAMP NOT NULL DEFAULT NOW(),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_eth_address FOREIGN KEY("address") REFERENCES eth_address(eth_address)
-)
+);
 
 CREATE INDEX eth_transaction_from_address_index ON eth_transaction (from_address);
 
