@@ -2,6 +2,7 @@ package com.ivy.api.interceptor;
 
 import java.io.PrintWriter;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.WebUtils;
 
 import com.ivy.api.annotation.RequireAuth;
 import com.ivy.api.service.AuthService;
@@ -36,8 +38,26 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String userAddress = request.getHeader("X-Web3-Auth-Address");
-        String signature = request.getHeader("X-Web3-Auth-Signature");
+        String userAddress = null;
+        String signature = null;
+
+        var userAddressCookie = WebUtils.getCookie(request, "ivy-auth-address");
+        if (userAddressCookie != null) {
+            userAddress = userAddressCookie.getValue();
+        }
+        var signatureCookie = WebUtils.getCookie(request, "ivy-auth-signature");
+        if (signatureCookie != null) {
+            signature = signatureCookie.getValue();
+        }
+
+        if (userAddress == null) {
+            userAddress = request.getHeader("X-Web3-Auth-Address");
+        }
+        if (signature == null) {
+            signature = request.getHeader("X-Web3-Auth-Signature");
+        }
+
+        log.debug("attempt login: address {} - signature {}", userAddress, signature);
 
         Boolean success = authService.authenticate(userAddress, signature);
         if (!success) {

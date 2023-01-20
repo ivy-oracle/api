@@ -31,7 +31,8 @@ public class AppConfiguration implements WebMvcConfigurer {
                         // Songbird
                         "https://songbird.ivyoracle.xyz",
                         "https://songbird-dev.ivyoracle.xyz")
-                .allowedMethods("*");
+                .allowedMethods("*")
+                .allowCredentials(true);
     }
 
     @Override
