@@ -22,6 +22,7 @@ import org.supercsv.io.CsvBeanWriter;
 import org.supercsv.io.ICsvBeanWriter;
 import org.supercsv.prefs.CsvPreference;
 
+import com.ivy.api.annotation.RequireAuth;
 import com.ivy.api.constant.TaskStatus;
 import com.ivy.api.repository.entity.EthBlockEntity;
 import com.ivy.api.repository.entity.EthTransactionEntity;
@@ -74,6 +75,7 @@ public class IndexerController {
         return ResponseEntity.ok(this.indexerService.getTransaction(transactionHash));
     }
 
+    @RequireAuth
     @GetMapping("export/transaction")
     public void exportToCSV(HttpServletResponse response, @RequestParam("address") String address) throws IOException {
         response.setContentType("text/csv");
