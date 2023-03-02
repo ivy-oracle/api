@@ -31,7 +31,7 @@ import org.web3j.tuples.generated.Tuple2;
 import org.web3j.tuples.generated.Tuple3;
 import org.web3j.tuples.generated.Tuple5;
 import org.web3j.tuples.generated.Tuple6;
-import org.web3j.tuples.generated.Tuple7;
+import org.web3j.tuples.generated.Tuple9;
 import org.web3j.tx.Contract;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
@@ -65,13 +65,13 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
 
     public static final String FUNC_ASSETS = "assets";
 
-    public static final String FUNC_AVERAGEFINALIZEPRICEEPOCH = "averageFinalizePriceEpoch";
-
     public static final String FUNC_CONFIGUREEPOCHS = "configureEpochs";
 
     public static final String FUNC_DEACTIVATEFTSO = "deactivateFtso";
 
     public static final String FUNC_EPOCHSCONFIGURATION = "epochsConfiguration";
+
+    public static final String FUNC_FALLBACKFINALIZEPRICEEPOCH = "fallbackFinalizePriceEpoch";
 
     public static final String FUNC_FINALIZEPRICEEPOCH = "finalizePriceEpoch";
 
@@ -86,6 +86,14 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
     public static final String FUNC_GETCURRENTEPOCHID = "getCurrentEpochId";
 
     public static final String FUNC_GETCURRENTPRICE = "getCurrentPrice";
+
+    public static final String FUNC_GETCURRENTPRICEDETAILS = "getCurrentPriceDetails";
+
+    public static final String FUNC_GETCURRENTPRICEFROMTRUSTEDPROVIDERS = "getCurrentPriceFromTrustedProviders";
+
+    public static final String FUNC_GETCURRENTPRICEWITHDECIMALS = "getCurrentPriceWithDecimals";
+
+    public static final String FUNC_GETCURRENTPRICEWITHDECIMALSFROMTRUSTEDPROVIDERS = "getCurrentPriceWithDecimalsFromTrustedProviders";
 
     public static final String FUNC_GETCURRENTRANDOM = "getCurrentRandom";
 
@@ -146,6 +154,8 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
             Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>(true) {
             }, new TypeReference<Uint256>() {
             }, new TypeReference<Bool>() {
+            }, new TypeReference<Uint256>() {
+            }, new TypeReference<Uint256>() {
             }, new TypeReference<Uint256>() {
             }, new TypeReference<Uint256>() {
             }, new TypeReference<Uint8>() {
@@ -282,10 +292,12 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
             typedResponse.epochId = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
             typedResponse.price = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
             typedResponse.rewardedFtso = (Boolean) eventValues.getNonIndexedValues().get(1).getValue();
-            typedResponse.lowRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
-            typedResponse.highRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(3).getValue();
-            typedResponse.finalizationType = (BigInteger) eventValues.getNonIndexedValues().get(4).getValue();
-            typedResponse.timestamp = (BigInteger) eventValues.getNonIndexedValues().get(5).getValue();
+            typedResponse.lowIQRRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
+            typedResponse.highIQRRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(3).getValue();
+            typedResponse.lowElasticBandRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(4).getValue();
+            typedResponse.highElasticBandRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(5).getValue();
+            typedResponse.finalizationType = (BigInteger) eventValues.getNonIndexedValues().get(6).getValue();
+            typedResponse.timestamp = (BigInteger) eventValues.getNonIndexedValues().get(7).getValue();
             responses.add(typedResponse);
         }
         return responses;
@@ -301,10 +313,14 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
                 typedResponse.epochId = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
                 typedResponse.price = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
                 typedResponse.rewardedFtso = (Boolean) eventValues.getNonIndexedValues().get(1).getValue();
-                typedResponse.lowRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
-                typedResponse.highRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(3).getValue();
-                typedResponse.finalizationType = (BigInteger) eventValues.getNonIndexedValues().get(4).getValue();
-                typedResponse.timestamp = (BigInteger) eventValues.getNonIndexedValues().get(5).getValue();
+                typedResponse.lowIQRRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
+                typedResponse.highIQRRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(3).getValue();
+                typedResponse.lowElasticBandRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(4)
+                        .getValue();
+                typedResponse.highElasticBandRewardPrice = (BigInteger) eventValues.getNonIndexedValues().get(5)
+                        .getValue();
+                typedResponse.finalizationType = (BigInteger) eventValues.getNonIndexedValues().get(6).getValue();
+                typedResponse.timestamp = (BigInteger) eventValues.getNonIndexedValues().get(7).getValue();
                 return typedResponse;
             }
         });
@@ -411,13 +427,13 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> activateFtso(BigInteger _firstEpochStartTime,
-            BigInteger _submitPeriod, BigInteger _revealPeriod) {
+    public RemoteFunctionCall<TransactionReceipt> activateFtso(BigInteger _firstEpochStartTs,
+            BigInteger _submitPeriodSeconds, BigInteger _revealPeriodSeconds) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
                 FUNC_ACTIVATEFTSO,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_firstEpochStartTime),
-                        new org.web3j.abi.datatypes.generated.Uint256(_submitPeriod),
-                        new org.web3j.abi.datatypes.generated.Uint256(_revealPeriod)),
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_firstEpochStartTs),
+                        new org.web3j.abi.datatypes.generated.Uint256(_submitPeriodSeconds),
+                        new org.web3j.abi.datatypes.generated.Uint256(_revealPeriodSeconds)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
@@ -446,18 +462,11 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> averageFinalizePriceEpoch(BigInteger _epochId) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
-                FUNC_AVERAGEFINALIZEPRICEEPOCH,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_epochId)),
-                Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallTransaction(function);
-    }
-
     public RemoteFunctionCall<TransactionReceipt> configureEpochs(BigInteger _maxVotePowerNatThresholdFraction,
             BigInteger _maxVotePowerAssetThresholdFraction, BigInteger _lowAssetUSDThreshold,
             BigInteger _highAssetUSDThreshold, BigInteger _highAssetTurnoutThresholdBIPS,
-            BigInteger _lowNatTurnoutThresholdBIPS, List<String> _trustedAddresses) {
+            BigInteger _lowNatTurnoutThresholdBIPS, BigInteger _elasticBandRewardBIPS, BigInteger _elasticBandWidthPPM,
+            List<String> _trustedAddresses) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
                 FUNC_CONFIGUREEPOCHS,
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_maxVotePowerNatThresholdFraction),
@@ -466,6 +475,8 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
                         new org.web3j.abi.datatypes.generated.Uint256(_highAssetUSDThreshold),
                         new org.web3j.abi.datatypes.generated.Uint256(_highAssetTurnoutThresholdBIPS),
                         new org.web3j.abi.datatypes.generated.Uint256(_lowNatTurnoutThresholdBIPS),
+                        new org.web3j.abi.datatypes.generated.Uint256(_elasticBandRewardBIPS),
+                        new org.web3j.abi.datatypes.generated.Uint256(_elasticBandWidthPPM),
                         new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Address>(
                                 org.web3j.abi.datatypes.Address.class,
                                 org.web3j.abi.Utils.typeMap(_trustedAddresses, org.web3j.abi.datatypes.Address.class))),
@@ -481,7 +492,7 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteFunctionCall<Tuple7<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>>> epochsConfiguration() {
+    public RemoteFunctionCall<Tuple9<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>>> epochsConfiguration() {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_EPOCHSCONFIGURATION,
                 Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {
@@ -490,25 +501,37 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
                 }, new TypeReference<Uint256>() {
                 }, new TypeReference<Uint256>() {
                 }, new TypeReference<Uint256>() {
+                }, new TypeReference<Uint256>() {
+                }, new TypeReference<Uint256>() {
                 }, new TypeReference<DynamicArray<Address>>() {
                 }));
-        return new RemoteFunctionCall<Tuple7<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>>>(
+        return new RemoteFunctionCall<Tuple9<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>>>(
                 function,
-                new Callable<Tuple7<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>>>() {
+                new Callable<Tuple9<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>>>() {
                     @Override
-                    public Tuple7<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>> call()
+                    public Tuple9<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>> call()
                             throws Exception {
                         List<Type> results = executeCallMultipleValueReturn(function);
-                        return new Tuple7<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>>(
+                        return new Tuple9<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, List<String>>(
                                 (BigInteger) results.get(0).getValue(),
                                 (BigInteger) results.get(1).getValue(),
                                 (BigInteger) results.get(2).getValue(),
                                 (BigInteger) results.get(3).getValue(),
                                 (BigInteger) results.get(4).getValue(),
                                 (BigInteger) results.get(5).getValue(),
-                                convertToNative((List<Address>) results.get(6).getValue()));
+                                (BigInteger) results.get(6).getValue(),
+                                (BigInteger) results.get(7).getValue(),
+                                convertToNative((List<Address>) results.get(8).getValue()));
                     }
                 });
+    }
+
+    public RemoteFunctionCall<TransactionReceipt> fallbackFinalizePriceEpoch(BigInteger _epochId) {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+                FUNC_FALLBACKFINALIZEPRICEEPOCH,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_epochId)),
+                Collections.<TypeReference<?>>emptyList());
+        return executeRemoteCallTransaction(function);
     }
 
     public RemoteFunctionCall<TransactionReceipt> finalizePriceEpoch(BigInteger _epochId, Boolean _returnRewardData) {
@@ -582,6 +605,92 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
                         return new Tuple2<BigInteger, BigInteger>(
                                 (BigInteger) results.get(0).getValue(),
                                 (BigInteger) results.get(1).getValue());
+                    }
+                });
+    }
+
+    public RemoteFunctionCall<Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>> getCurrentPriceDetails() {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+                FUNC_GETCURRENTPRICEDETAILS,
+                Arrays.<Type>asList(),
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {
+                }, new TypeReference<Uint256>() {
+                }, new TypeReference<Uint8>() {
+                }, new TypeReference<Uint256>() {
+                }, new TypeReference<Uint8>() {
+                }));
+        return new RemoteFunctionCall<Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>>(function,
+                new Callable<Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>>() {
+                    @Override
+                    public Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>(
+                                (BigInteger) results.get(0).getValue(),
+                                (BigInteger) results.get(1).getValue(),
+                                (BigInteger) results.get(2).getValue(),
+                                (BigInteger) results.get(3).getValue(),
+                                (BigInteger) results.get(4).getValue());
+                    }
+                });
+    }
+
+    public RemoteFunctionCall<Tuple2<BigInteger, BigInteger>> getCurrentPriceFromTrustedProviders() {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+                FUNC_GETCURRENTPRICEFROMTRUSTEDPROVIDERS,
+                Arrays.<Type>asList(),
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {
+                }, new TypeReference<Uint256>() {
+                }));
+        return new RemoteFunctionCall<Tuple2<BigInteger, BigInteger>>(function,
+                new Callable<Tuple2<BigInteger, BigInteger>>() {
+                    @Override
+                    public Tuple2<BigInteger, BigInteger> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple2<BigInteger, BigInteger>(
+                                (BigInteger) results.get(0).getValue(),
+                                (BigInteger) results.get(1).getValue());
+                    }
+                });
+    }
+
+    public RemoteFunctionCall<Tuple3<BigInteger, BigInteger, BigInteger>> getCurrentPriceWithDecimals() {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+                FUNC_GETCURRENTPRICEWITHDECIMALS,
+                Arrays.<Type>asList(),
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {
+                }, new TypeReference<Uint256>() {
+                }, new TypeReference<Uint256>() {
+                }));
+        return new RemoteFunctionCall<Tuple3<BigInteger, BigInteger, BigInteger>>(function,
+                new Callable<Tuple3<BigInteger, BigInteger, BigInteger>>() {
+                    @Override
+                    public Tuple3<BigInteger, BigInteger, BigInteger> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple3<BigInteger, BigInteger, BigInteger>(
+                                (BigInteger) results.get(0).getValue(),
+                                (BigInteger) results.get(1).getValue(),
+                                (BigInteger) results.get(2).getValue());
+                    }
+                });
+    }
+
+    public RemoteFunctionCall<Tuple3<BigInteger, BigInteger, BigInteger>> getCurrentPriceWithDecimalsFromTrustedProviders() {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+                FUNC_GETCURRENTPRICEWITHDECIMALSFROMTRUSTEDPROVIDERS,
+                Arrays.<Type>asList(),
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {
+                }, new TypeReference<Uint256>() {
+                }, new TypeReference<Uint256>() {
+                }));
+        return new RemoteFunctionCall<Tuple3<BigInteger, BigInteger, BigInteger>>(function,
+                new Callable<Tuple3<BigInteger, BigInteger, BigInteger>>() {
+                    @Override
+                    public Tuple3<BigInteger, BigInteger, BigInteger> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple3<BigInteger, BigInteger, BigInteger>(
+                                (BigInteger) results.get(0).getValue(),
+                                (BigInteger) results.get(1).getValue(),
+                                (BigInteger) results.get(2).getValue());
                     }
                 });
     }
@@ -870,9 +979,13 @@ public class Ftso extends Contract implements com.ivy.api.contract.Ftso {
 
         public Boolean rewardedFtso;
 
-        public BigInteger lowRewardPrice;
+        public BigInteger lowIQRRewardPrice;
 
-        public BigInteger highRewardPrice;
+        public BigInteger highIQRRewardPrice;
+
+        public BigInteger lowElasticBandRewardPrice;
+
+        public BigInteger highElasticBandRewardPrice;
 
         public BigInteger finalizationType;
 

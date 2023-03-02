@@ -216,9 +216,15 @@ public class FTSOPriceCron {
 							(BigInteger) eventValues.getNonIndexedValues().get(2).getValue());
 					price.setHighRewardPrice(
 							(BigInteger) eventValues.getNonIndexedValues().get(3).getValue());
-					price.setFinalizationType(
-							(BigInteger) eventValues.getNonIndexedValues().get(4).getValue());
-					price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(5).getValue());
+					if (chain.equals("flare")) {
+						price.setFinalizationType(
+								(BigInteger) eventValues.getNonIndexedValues().get(4).getValue());
+						price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(5).getValue());
+					} else {
+						price.setFinalizationType(
+								(BigInteger) eventValues.getNonIndexedValues().get(6).getValue());
+						price.setTimestamp((BigInteger) eventValues.getNonIndexedValues().get(7).getValue());
+					}
 
 					prices.add(price);
 				}
